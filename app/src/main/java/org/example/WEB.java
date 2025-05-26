@@ -4,27 +4,32 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class WEB {
 
     public static void load() {
-        try {
-            InputStream input = WEB.class.getClassLoader().getResourceAsStream("pg8294.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+        try (
+                BufferedReader reader = new BufferedReader(new InputStreamReader(
+                        WEB.class.getClassLoader().getResourceAsStream("pg8294.txt"),
+                        StandardCharsets.UTF_8
+                ))
+        ) {
+            Map<Integer, String> bookNames = new HashMap<>();
 
-            HashMap<Integer,String> bookNames = new HashMap<>();
-
-            ArrayList<ArrayList> books = new ArrayList<>();
+            ArrayList<ArrayList<ArrayList<String>>> books = new ArrayList<>();
 
             String line;
-            ArrayList<ArrayList> book = null;
+            ArrayList<ArrayList<String>> book = null;
             ArrayList<String> chapter = null;
             String verse = null;
             int chapterNumber;
             int verseNumber;
             while ((line = reader.readLine()) != null) {
                 // advance to the content
-                if (line.startsWith("Book ")) break;
+                if (line.startsWith("Book ")) {
+                    break;
+                }
             }
             while (line != null) {
                 if (line.length() == 0) {
@@ -39,7 +44,7 @@ public class WEB {
                     int bookNumber = Integer.parseInt(parts[1]);
                     String bookName = parts[2];
 
-                    book = new ArrayList<ArrayList>();
+                    book = new ArrayList<>();
                     books.add(book);
                     assert books.size() == bookNumber;
 
@@ -49,14 +54,14 @@ public class WEB {
                 } else if (line.startsWith(" ")) {
                     // continuation of a verse
 
-                    verse += " " + line.substring(8);
-                    chapter.set(chapter.size()-1, verse);
+                    verse = String.join(" ", verse, line.substring(8));
+                    chapter.set(chapter.size() - 1, verse);
 
                 } else {
                     // start of a verse
 
-                    chapterNumber = Integer.parseInt(line.substring(0,3));
-                    verseNumber = Integer.parseInt(line.substring(4,7));
+                    chapterNumber = Integer.parseInt(line.substring(0, 3));
+                    verseNumber = Integer.parseInt(line.substring(4, 7));
                     verse = line.substring(8);
 
                     if (book.size() < chapterNumber) {
@@ -76,6 +81,7 @@ public class WEB {
             // books
             System.out.println("done");
 
+            // TODO: add iterator to yield each verse with book no, book name, chapter, verse
             // TODO: remove verse notes (between curly braces)
 
         } catch (IOException e) {
