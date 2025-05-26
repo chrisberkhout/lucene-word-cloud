@@ -7,83 +7,63 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class WEB {
+    public record Verse(String bookName, int book, int chapter, int verse, String text) {}
 
-    public static void load() {
+    public Map<Integer, String> bookNames = new HashMap<>();
+    public ArrayList<Verse> verses = new ArrayList<>();
+
+    public void load() {
         try (
                 BufferedReader reader = new BufferedReader(new InputStreamReader(
                         WEB.class.getClassLoader().getResourceAsStream("pg8294.txt"),
                         StandardCharsets.UTF_8
                 ))
         ) {
-            Map<Integer, String> bookNames = new HashMap<>();
-
-            ArrayList<ArrayList<ArrayList<String>>> books = new ArrayList<>();
-
             String line;
-            ArrayList<ArrayList<String>> book = null;
-            ArrayList<String> chapter = null;
-            String verse = null;
-            int chapterNumber;
-            int verseNumber;
+            String bookName = null;
+            int book = 0;
+            int chapter = 0;
+            int verse = 0;
+
             while ((line = reader.readLine()) != null) {
                 // advance to the content
-                if (line.startsWith("Book ")) {
-                    break;
-                }
+                if (line.startsWith("Book ")) break;
             }
+
             while (line != null) {
                 if (line.length() == 0) {
                     // end of content
-
                     break;
-
                 } else if (line.startsWith("Book ")) {
                     // start of a book
-
                     String[] parts = line.split(" ", 3);
-                    int bookNumber = Integer.parseInt(parts[1]);
-                    String bookName = parts[2];
-
-                    book = new ArrayList<>();
-                    books.add(book);
-                    assert books.size() == bookNumber;
-
-                    bookNames.put(bookNumber, bookName);
-                    assert bookNames.size() == bookNumber;
-
+                    book = Integer.parseInt(parts[1]);
+                    bookName = parts[2];
+                    this.bookNames.put(book, bookName);
                 } else if (line.startsWith(" ")) {
                     // continuation of a verse
-
-                    verse = String.join(" ", verse, line.substring(8));
-                    chapter.set(chapter.size() - 1, verse);
-
+                    Verse v = this.verses.removeLast();
+                    String text = String.join(" ", v.text, line.substring(8));
+                    this.verses.add(new Verse(v.bookName, v.book, v.chapter, v.verse, text));
                 } else {
                     // start of a verse
-
-                    chapterNumber = Integer.parseInt(line.substring(0, 3));
-                    verseNumber = Integer.parseInt(line.substring(4, 7));
-                    verse = line.substring(8);
-
-                    if (book.size() < chapterNumber) {
-                        // new chapter
-                        chapter = new ArrayList<String>();
-                        book.add(chapter);
-                    }
-                    chapter.add(verse);
-                    assert book.size() == chapterNumber;
-                    assert chapter.size() == verseNumber;
-
+                    chapter = Integer.parseInt(line.substring(0, 3));
+                    verse = Integer.parseInt(line.substring(4, 7));
+                    String text = line.substring(8);
+                    this.verses.add(new Verse(bookName, book, chapter, verse, text));
                 }
-
                 line = reader.readLine();
             }
 
-            // books
-            System.out.println("done");
-
-            // TODO: add iterator to yield each verse with book no, book name, chapter, verse
-            // TODO: remove verse notes (between curly braces)
-
+            for (int i = 0; i < verses.size(); i++) {
+                Verse v = verses.get(i);
+                // strip notes
+                if (v.text.contains("{")) {
+                    String cleanText = v.text.replaceAll("\\{[^}]*\\}", "");
+                    v = new Verse(v.bookName, v.book, v.chapter, v.verse, cleanText);
+                    verses.set(i, v);
+                }
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
