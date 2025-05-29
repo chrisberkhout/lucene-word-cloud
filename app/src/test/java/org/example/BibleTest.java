@@ -15,7 +15,7 @@ public class BibleTest {
 
     @Test
     void loadsTheFirstVerseCorrectly() {
-        Bible.Verse verse = bible.verses.getFirst();
+        Bible.Verse verse = bible.getVerses().getFirst();
         assertEquals(verse.bookName(), "Genesis");
         assertEquals(verse.book(), 1);
         assertEquals(verse.chapter(), 1);
@@ -25,12 +25,12 @@ public class BibleTest {
 
     @Test
     void loadsTheExpectedNumberOfVerses() {
-        assertEquals(bible.verses.size(), 31102);
+        assertEquals(bible.getVerses().size(), 31102);
     }
 
     @Test
     void loadsTheLastVerseCorrectly() {
-        Bible.Verse verse = bible.verses.getLast();
+        Bible.Verse verse = bible.getVerses().getLast();
         assertEquals(verse.bookName(), "Revelation");
         assertEquals(verse.book(), 66);
         assertEquals(verse.chapter(), 22);

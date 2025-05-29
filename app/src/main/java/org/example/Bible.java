@@ -2,15 +2,17 @@ package org.example;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Bible {
     public record Verse(String bookName, int book, int chapter, int verse, String text) {}
 
-    public Map<Integer, String> bookNames = new HashMap<>();
-    public ArrayList<Verse> verses = new ArrayList<>();
+    private final Map<Integer, String> bookNames = new HashMap<>();
+    private final ArrayList<Verse> verses = new ArrayList<>();
+
+    public List<Verse> getVerses() {
+        return Collections.unmodifiableList(verses);
+    }
 
     public void load() {
         try (
@@ -68,4 +70,5 @@ public class Bible {
             throw new RuntimeException(e);
         }
     }
+
 }
