@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WEB {
+public class Bible {
     public record Verse(String bookName, int book, int chapter, int verse, String text) {}
 
     public Map<Integer, String> bookNames = new HashMap<>();
@@ -15,7 +15,7 @@ public class WEB {
     public void load() {
         try (
                 BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        WEB.class.getClassLoader().getResourceAsStream("pg8294.txt"),
+                        Bible.class.getClassLoader().getResourceAsStream("pg8294.txt"),
                         StandardCharsets.UTF_8
                 ))
         ) {
