@@ -3,10 +3,10 @@ package org.example;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -15,15 +15,25 @@ import java.util.List;
 public class App {
     private static String indexPath = "index";
 
+    private Directory dir;
+    private Analyzer analyzer;
+
+    public App() {
+        try {
+            this.dir = FSDirectory.open(Paths.get(this.indexPath));
+            this.analyzer = new StandardAnalyzer();
+        } catch (IOException e) {
+            System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
+        }
+    }
+
     public void buildIndex() {
         try {
             Bible bible = new Bible();
             bible.load();
             List<Bible.Verse> verses = bible.getVerses();
 
-            Directory dir = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
-            IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
+            IndexWriterConfig iwc = new IndexWriterConfig(this.analyzer);
 
             // overwrite any existing index
             iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
@@ -69,7 +79,40 @@ public class App {
         indexWriter.addDocument(doc);
     }
 
+
+    public void getWords() {
+        TopWords tw = new TopWords();
+        try {
+            IndexReader reader = DirectoryReader.open(this.dir);
+
+            Terms terms = MultiTerms.getTerms(reader, "text");
+            if (terms == null) {
+                System.out.println("error no terms found!");
+            } else {
+                TermsEnum termsEnum = terms.iterator();
+                BytesRef term;
+                while ((term = termsEnum.next()) != null) {
+                    String termStr = term.utf8ToString();
+                    long tf = termsEnum.totalTermFreq();
+                    long df = termsEnum.docFreq();
+                    double idf = Math.log((reader.numDocs() + 1.0) / (df + 1.0));
+                    double tfidf = tf * idf;
+                    tw.maybeAddWord(termStr, tfidf);
+                }
+            }
+
+            for (TopWords.ScoredWord w : tw.getWords()) {
+                System.out.println(w.score() + "  " + w.word());
+            }
+
+        } catch (IOException e) {
+            System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
+        }
+    }
+
     public static void main(String[] args) {
-        new App().buildIndex();
+        App app = new App();
+        app.buildIndex();
+        app.getWords();
     }
 }
