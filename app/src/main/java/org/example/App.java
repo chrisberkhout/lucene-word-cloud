@@ -1,7 +1,7 @@
 package org.example;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
@@ -21,7 +21,14 @@ public class App {
     public App() {
         try {
             this.dir = FSDirectory.open(Paths.get(this.indexPath));
-            this.analyzer = new StandardAnalyzer();
+            this.analyzer = CustomAnalyzer.builder()
+                .withTokenizer("standard")
+                .addTokenFilter("lowercase")
+                .addTokenFilter("englishpossessive")
+                .addTokenFilter("stop")
+                .addTokenFilter("kstem")
+                .build();
+
         } catch (IOException e) {
             System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
         }
