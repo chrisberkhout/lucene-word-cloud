@@ -11,6 +11,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class App {
     private static String indexPath = "index";
@@ -48,9 +49,30 @@ public class App {
             iwc.setUseCompoundFile(false);
 
             try (IndexWriter writer = new IndexWriter(dir, iwc)) {
-                for (Bible.Verse verse : verses) {
-                    indexVerse(writer, verse);
-                }
+
+                // by verse
+//                for (Bible.Verse verse : verses) {
+//                    indexVerse(writer, verse);
+//                }
+
+                // by chapter
+                verses.stream().collect(Collectors.groupingBy(
+                    v -> List.of(v.bookName(), v.book(), v.chapter())
+                )).forEach((bookChap, group) -> {
+                    try {
+                        indexChapter(
+                            writer,
+                            (String)bookChap.get(0),
+                            (Integer)bookChap.get(1),
+                            (Integer)bookChap.get(2),
+                            group.stream().map(Bible.Verse::text).collect(Collectors.joining(" "))
+                        );
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                });
+
                 // costly but optimizes search performance for static indexes
                 System.out.println("merging");
                 writer.forceMerge(1);
@@ -59,6 +81,27 @@ public class App {
         } catch (IOException e) {
             System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
         }
+    }
+
+    private void indexChapter(IndexWriter indexWriter, String bookName, int book, int chapter, String text) throws IOException {
+        Document doc = new Document();
+
+        doc.add(new TextField("book_name", bookName, Field.Store.YES));
+        doc.add(new KeywordField("book_name.keyword", bookName, Field.Store.NO));
+
+        doc.add(new LongPoint("book", book)); // filtering
+        doc.add(new NumericDocValuesField("book", book)); // sorting / faceting
+        doc.add(new StoredField("book", book)); // retrieval
+
+        doc.add(new LongPoint("chapter", chapter)); // filtering
+        doc.add(new NumericDocValuesField("chapter", chapter)); // sorting / faceting
+        doc.add(new StoredField("chapter", chapter)); // retrieval
+
+        doc.add(new TextField("text", text, Field.Store.YES));
+
+        System.out.println("adding "+bookName+", chapter "+chapter);
+
+        indexWriter.addDocument(doc);
     }
 
     private void indexVerse(IndexWriter indexWriter, Bible.Verse verse) throws IOException {
