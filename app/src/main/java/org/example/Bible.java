@@ -6,12 +6,48 @@ import java.util.*;
 
 public class Bible {
     public record Verse(String bookName, int book, int chapter, int verse, String text) {}
+    public record Chapter(String bookName, int book, int chapter, String text) {}
 
     private final Map<Integer, String> bookNames = new HashMap<>();
     private final ArrayList<Verse> verses = new ArrayList<>();
 
     public List<Verse> getVerses() {
         return Collections.unmodifiableList(verses);
+    }
+
+    public List<Chapter> getChapters() {
+        if (this.verses.isEmpty()) {
+            return List.of();
+        }
+
+        List<Chapter> chapters = new ArrayList<>();
+
+        Verse first = this.verses.getFirst();
+        String lastBookName = first.bookName();
+        int lastBook = first.book();
+        int lastChapter = first.chapter();
+        StringBuilder lastText = new StringBuilder(first.text());
+
+        for (int i = 1; i < this.verses.size(); i++) {
+            Verse v = this.verses.get(i);
+            if (v.chapter() == lastChapter && v.book() == lastBook) {
+                // the chapter continues
+                lastText.append(" ");
+                lastText.append(v.text());
+            } else {
+                // it's a new chapter - add last chapter
+                chapters.add(new Chapter(lastBookName, lastBook, lastChapter, lastText.toString()));
+                // start the new chapter
+                lastBookName = v.bookName();
+                lastBook = v.book();
+                lastChapter = v.chapter();
+                lastText = new StringBuilder(v.text());
+            }
+        }
+
+        chapters.add(new Chapter(lastBookName, lastBook, lastChapter, lastText.toString()));
+
+        return Collections.unmodifiableList(chapters);
     }
 
     public void load() {

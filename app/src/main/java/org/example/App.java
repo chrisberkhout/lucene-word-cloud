@@ -48,7 +48,7 @@ public class App {
         try {
             Bible bible = new Bible();
             bible.load();
-            List<Bible.Verse> verses = bible.getVerses();
+//            List<Bible.Verse> verses = bible.getVerses();
 
             IndexWriterConfig iwc = new IndexWriterConfig(this.analyzer);
 
@@ -65,17 +65,9 @@ public class App {
 //                }
 
                 // by chapter
-                verses.stream().collect(Collectors.groupingBy(
-                    v -> List.of(v.bookName(), v.book(), v.chapter())
-                )).forEach((bookChap, group) -> {
+                bible.getChapters().forEach(chapter -> {
                     try {
-                        indexChapter(
-                            writer,
-                            (String)bookChap.get(0),
-                            (Integer)bookChap.get(1),
-                            (Integer)bookChap.get(2),
-                            group.stream().map(Bible.Verse::text).collect(Collectors.joining(" "))
-                        );
+                        indexChapter(writer, chapter);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -92,23 +84,23 @@ public class App {
         }
     }
 
-    private void indexChapter(IndexWriter indexWriter, String bookName, int book, int chapter, String text) throws IOException {
+    private void indexChapter(IndexWriter indexWriter, Bible.Chapter chapter) throws IOException {
         Document doc = new Document();
 
-        doc.add(new TextField("book_name", bookName, Field.Store.YES));
-        doc.add(new KeywordField("book_name.keyword", bookName, Field.Store.NO));
+        doc.add(new TextField("book_name", chapter.bookName(), Field.Store.YES));
+        doc.add(new KeywordField("book_name.keyword", chapter.bookName(), Field.Store.NO));
 
-        doc.add(new LongPoint("book", book)); // filtering
-        doc.add(new NumericDocValuesField("book", book)); // sorting / faceting
-        doc.add(new StoredField("book", book)); // retrieval
+        doc.add(new LongPoint("book", chapter.book())); // filtering
+        doc.add(new NumericDocValuesField("book", chapter.book())); // sorting / faceting
+        doc.add(new StoredField("book", chapter.book())); // retrieval
 
-        doc.add(new LongPoint("chapter", chapter)); // filtering
-        doc.add(new NumericDocValuesField("chapter", chapter)); // sorting / faceting
-        doc.add(new StoredField("chapter", chapter)); // retrieval
+        doc.add(new LongPoint("chapter", chapter.chapter())); // filtering
+        doc.add(new NumericDocValuesField("chapter", chapter.chapter())); // sorting / faceting
+        doc.add(new StoredField("chapter", chapter.chapter())); // retrieval
 
-        doc.add(new TextField("text", text, Field.Store.YES));
+        doc.add(new TextField("text", chapter.text(), Field.Store.YES));
 
-        System.out.println("adding "+bookName+", chapter "+chapter);
+        System.out.println("adding "+chapter.bookName()+", chapter "+chapter.chapter());
 
         indexWriter.addDocument(doc);
     }
