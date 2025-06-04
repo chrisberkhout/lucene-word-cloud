@@ -10,7 +10,9 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class App {
@@ -22,13 +24,20 @@ public class App {
     public App() {
         try {
             this.dir = FSDirectory.open(Paths.get(this.indexPath));
+
+            Map<String, String> stopParams = new HashMap<>();
+            stopParams.put("words", "stopwords-en.txt"); // https://github.com/stopwords-iso/stopwords-iso
+            stopParams.put("format", "wordset");
+            stopParams.put("ignoreCase", "true");
+
             this.analyzer = CustomAnalyzer.builder()
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
                 .addTokenFilter("englishpossessive")
-                .addTokenFilter("stop")
+                .addTokenFilter("stop", stopParams)
                 .addTokenFilter("kstem")
                 .build();
+
 
         } catch (IOException e) {
             System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
