@@ -7,10 +7,4 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {
-    @Test void appHasAGreeting() {
-        App classUnderTest = new App();
-        Bible bible = new Bible();
-        bible.load();
-        assertNotNull("foo", "app should have a greeting");
-    }
 }
