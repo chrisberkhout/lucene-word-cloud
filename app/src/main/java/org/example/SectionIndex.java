@@ -53,9 +53,9 @@ public class SectionIndex {
             iwc.setUseCompoundFile(false);
 
             IndexWriter writer = new IndexWriter(dir, iwc);
-            // by chapter
-            for (Bible.Section chapter : bible.getChapters()) {
-                indexSection(writer, chapter);
+            // by verse
+            for (Bible.Section verse : bible.getVerses()) {
+                indexSection(writer, verse);
             }
 
             // costly but optimizes search performance for static indexes
