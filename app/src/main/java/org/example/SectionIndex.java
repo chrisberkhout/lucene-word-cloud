@@ -23,20 +23,17 @@ public class SectionIndex {
 
     public SectionIndex() {
         try {
-            // TODO
-            Map<String, String> stopParams = new HashMap<>();
-            stopParams.put("words", "stopwords-en.txt"); // https://github.com/stopwords-iso/stopwords-iso
-            stopParams.put("format", "wordset");
-            stopParams.put("ignoreCase", "true");
-
             this.analyzer = CustomAnalyzer.builder()
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
                 .addTokenFilter("englishpossessive")
-                .addTokenFilter("stop", stopParams)
+                .addTokenFilter("stop", new HashMap<>(Map.of(
+                   "format", "wordset",
+                   "ignoreCase", "true",
+                   "words", "stopwords-en.txt" // https://github.com/stopwords-iso/stopwords-iso
+                )))
                 .addTokenFilter("kstem")
                 .build();
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
