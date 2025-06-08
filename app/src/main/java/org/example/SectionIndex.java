@@ -93,7 +93,11 @@ public class SectionIndex {
             doc.add(new StoredField("verse", v)); // retrieval
         });
 
-        doc.add(new TextField("text", section.text(), Field.Store.YES)); // store term vectors too?
+        FieldType textWithTV = new FieldType(TextField.TYPE_STORED) {{
+            setStoreTermVectors(true);
+            freeze();
+        }};
+        doc.add(new Field("text", section.text(), textWithTV));
 
 //        System.out.println(
 //            "adding "+section.bookName()+
@@ -129,9 +133,9 @@ public class SectionIndex {
         return tw.getWords();
     }
 
-    public void query() {
+    public List<TopWords.ScoredWord> query() {
         try {
-            String qStr = "jesus walking";
+            String qStr = "spoke";
 
             IndexReader reader = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(reader);
@@ -143,25 +147,86 @@ public class SectionIndex {
                 q = sqp.parse(qStr, "text");
             } catch (QueryNodeException e) {
                 System.out.println("query node exception during query parsing: "+e);
-                return;
+                throw new RuntimeException(e);
             }
 
+            // scored top N search
             TopDocs topDocs = searcher.search(q, 10);
             ScoreDoc[] hits = topDocs.scoreDocs;
-
             System.out.println("hits: "+topDocs.totalHits.value());
             System.out.println("");
-            for (int i = 0; i < hits.length; i++) {
-                Document doc = storedFields.document(hits[i].doc);
-                System.out.println(
-                    "hit "+i+", "+
-                    "score "+hits[i].score+": "+
-                    doc.get("book_name")+
-                    ", chapter "+doc.get("chapter")+
-                    ", verse "+doc.get("verse")+
-                    ": "+doc.get("text")
-                );
+//            for (int i = 0; i < hits.length; i++) {
+//                Document doc = storedFields.document(hits[i].doc);
+//                System.out.println(
+//                    "hit "+i+", "+
+//                    "score "+hits[i].score+": "+
+//                    doc.get("book_name")+
+//                    ", chapter "+doc.get("chapter")+
+//                    ", verse "+doc.get("verse")+
+//                    ": "+doc.get("text")
+//                );
+//            }
+//            System.out.println("");
+
+            // unscored search to collect terms information from every match
+
+            class Freqs {
+                long total;
+                long docs;
+                Freqs(long total, long docs) {
+                    this.total = total;
+                    this.docs = docs;
+                }
             }
+            Map<String,Freqs> freqs = new HashMap();
+
+            Collector collector = new SimpleCollector() {
+                private LeafReaderContext context;
+                private int docBase;
+
+                @Override
+                protected void doSetNextReader(LeafReaderContext context) throws IOException {
+                    this.context = context;
+                    this.docBase = context.docBase;
+                }
+
+                @Override
+                public void collect(int doc) throws IOException {
+                    int globalDocId = docBase + doc;
+                    Terms terms = reader.termVectors().get(globalDocId, "text");
+                    if (terms == null) {
+                        System.out.println("terms from term vectors null");
+                    } else {
+                        TermsEnum termsEnum = terms.iterator();
+                        BytesRef term;
+                        while ((term = termsEnum.next()) != null) {
+                            String termStr = term.utf8ToString();
+                            Freqs c = freqs.computeIfAbsent(termStr, k -> new Freqs(0,0));
+                            c.total += termsEnum.totalTermFreq();
+                            c.docs += 1;
+                        }
+                    }
+                }
+
+                @Override
+                public ScoreMode scoreMode() {
+                    return ScoreMode.COMPLETE_NO_SCORES;
+                }
+            };
+            searcher.search(q, collector);
+
+            TopWords tw = new TopWords();
+
+            for (Map.Entry<String,Freqs> e : freqs.entrySet()) {
+                Freqs f = e.getValue();
+                double idf = Math.log((reader.numDocs() + 1.0) / (f.docs + 1.0));
+                double tfidf = f.total * idf;
+                tw.maybeAddWord(e.getKey(), tfidf);
+            }
+
+            return tw.getWords();
+
+
         } catch (IOException e) {
             throw new RuntimeException();
         }
