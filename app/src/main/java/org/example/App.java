@@ -14,7 +14,8 @@ public class App {
         SectionIndex index = new SectionIndex();
         index.build(bible);
         for (TopWords.ScoredWord w : index.getScoredWords()) {
-            System.out.println(w.score() + "  " + w.word());
+//            System.out.println(w.score() + "  " + w.word());
         }
+        index.query();
     }
 }

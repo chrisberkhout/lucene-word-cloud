@@ -4,6 +4,11 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
+import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -61,6 +66,7 @@ public class SectionIndex {
             writer.close();
 
             System.out.println("done");
+            System.out.println("");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -86,13 +92,13 @@ public class SectionIndex {
             doc.add(new StoredField("verse", v)); // retrieval
         });
 
-        doc.add(new TextField("text", section.text(), Field.Store.YES));
+        doc.add(new TextField("text", section.text(), Field.Store.YES)); // store term vectors too?
 
-        System.out.println(
-            "adding "+section.bookName()+
-            ", chapter "+section.chapter()+
-            section.verse().map(v -> ", verse "+v).orElse("")
-        );
+//        System.out.println(
+//            "adding "+section.bookName()+
+//            ", chapter "+section.chapter()+
+//            section.verse().map(v -> ", verse "+v).orElse("")
+//        );
 
         indexWriter.addDocument(doc);
     }
@@ -120,6 +126,44 @@ public class SectionIndex {
             throw new RuntimeException();
         }
         return tw.getWords();
+    }
+
+    public void query() {
+        try {
+            String qStr = "jesus walking";
+
+            IndexReader reader = DirectoryReader.open(dir);
+            IndexSearcher searcher = new IndexSearcher(reader);
+            StoredFields storedFields = searcher.storedFields();
+
+            StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
+            Query q;
+            try {
+                q = sqp.parse(qStr, "text");
+            } catch (QueryNodeException e) {
+                System.out.println("query node exception during query parsing: "+e);
+                return;
+            }
+
+            TopDocs topDocs = searcher.search(q, 10);
+            ScoreDoc[] hits = topDocs.scoreDocs;
+
+            System.out.println("hits: "+topDocs.totalHits.value());
+            System.out.println("");
+            for (int i = 0; i < hits.length; i++) {
+                Document doc = storedFields.document(hits[i].doc);
+                System.out.println(
+                    "hit "+i+", "+
+                    "score "+hits[i].score+": "+
+                    doc.get("book_name")+
+                    ", chapter "+doc.get("chapter")+
+                    ", verse "+doc.get("verse")+
+                    ": "+doc.get("text")
+                );
+            }
+        } catch (IOException e) {
+            throw new RuntimeException();
+        }
     }
 
 }
