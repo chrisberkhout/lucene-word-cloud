@@ -37,6 +37,11 @@ application {
     mainClass = 'org.example.App'
 }
 
+run {
+    jvmArgs += ['--enable-native-access=ALL-UNNAMED']
+    jvmArgs += ['--add-modules', 'jdk.incubator.vector']
+}
+
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
