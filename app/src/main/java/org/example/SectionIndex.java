@@ -16,6 +16,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,9 +134,9 @@ public class SectionIndex {
         return tw.getWords();
     }
 
-    public List<TopWords.ScoredWord> query() {
+    public List<String> query(String qStr) {
         try {
-            String qStr = "spoke";
+            List<String> result = new ArrayList<>();
 
             IndexReader reader = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(reader);
@@ -155,17 +156,17 @@ public class SectionIndex {
             ScoreDoc[] hits = topDocs.scoreDocs;
             System.out.println("hits: "+topDocs.totalHits.value());
             System.out.println("");
-//            for (int i = 0; i < hits.length; i++) {
-//                Document doc = storedFields.document(hits[i].doc);
-//                System.out.println(
-//                    "hit "+i+", "+
-//                    "score "+hits[i].score+": "+
-//                    doc.get("book_name")+
-//                    ", chapter "+doc.get("chapter")+
-//                    ", verse "+doc.get("verse")+
-//                    ": "+doc.get("text")
-//                );
-//            }
+            for (int i = 0; i < hits.length; i++) {
+                Document doc = storedFields.document(hits[i].doc);
+                result.add(
+                    "hit "+i+", "+
+                    "score "+hits[i].score+": "+
+                    doc.get("book_name")+
+                    ", chapter "+doc.get("chapter")+
+                    ", verse "+doc.get("verse")+
+                    ": "+doc.get("text")
+                );
+            }
 //            System.out.println("");
 
             // unscored search to collect terms information from every match
@@ -224,7 +225,7 @@ public class SectionIndex {
                 tw.maybeAddWord(e.getKey(), tfidf);
             }
 
-            return tw.getWords();
+            return result;
 
 
         } catch (IOException e) {
