@@ -4,11 +4,8 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.index.*;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
-import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -134,10 +131,10 @@ public class SectionIndex {
         return tw.getWords();
     }
 
-    public List<String> query(String qStr) {
+    public QueryResult query(String qStr) {
+        long start = System.nanoTime();
+        List<QueryResult.Hit> hits = new ArrayList<>();
         try {
-            List<String> result = new ArrayList<>();
-
             IndexReader reader = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(reader);
             StoredFields storedFields = searcher.storedFields();
@@ -153,18 +150,19 @@ public class SectionIndex {
 
             // scored top N search
             TopDocs topDocs = searcher.search(q, 10);
-            ScoreDoc[] hits = topDocs.scoreDocs;
-            System.out.println("hits: "+topDocs.totalHits.value());
+            ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+            System.out.println("totalHits: "+topDocs.totalHits.value());
             System.out.println("");
-            for (int i = 0; i < hits.length; i++) {
-                Document doc = storedFields.document(hits[i].doc);
-                result.add(
-                    "hit "+i+", "+
-                    "score "+hits[i].score+": "+
-                    doc.get("book_name")+
-                    ", chapter "+doc.get("chapter")+
-                    ", verse "+doc.get("verse")+
-                    ": "+doc.get("text")
+            for (int i = 0; i < scoreDocs.length; i++) {
+                Document doc = storedFields.document(scoreDocs[i].doc);
+                hits.add(
+                    new QueryResult.Hit(
+                        scoreDocs[i].score,
+                        doc.get("book_name"),
+                        Long.parseLong(doc.get("chapter")),
+                        Long.parseLong(doc.get("verse")),
+                        doc.get("text")
+                    )
                 );
             }
 //            System.out.println("");
@@ -225,7 +223,16 @@ public class SectionIndex {
                 tw.maybeAddWord(e.getKey(), tfidf);
             }
 
-            return result;
+
+            long end = System.nanoTime();
+            QueryResult qr = new QueryResult(
+                ((end-start) / 1_000_000),
+                topDocs.totalHits.value(),
+                hits,
+                tw.getWords()
+            );
+
+            return qr;
 
 
         } catch (IOException e) {

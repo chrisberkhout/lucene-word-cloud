@@ -2,9 +2,12 @@ package org.example;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
+
+import javax.management.Query;
 
 public class App {
     public static void main(String[] args) {
@@ -26,8 +29,8 @@ public class App {
             })
             .get("/search", ctx -> {
                 String q = ctx.queryParam("q");
-                List<String> hits = index.query(q);
-                ctx.json(Map.of("rows", hits));
+                QueryResult qr = index.query(q);
+                ctx.json(qr);
             })
             .start(7070);
     }

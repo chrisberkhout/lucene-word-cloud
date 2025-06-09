@@ -23,47 +23,16 @@
 <script id="table-template" type="x-tmpl-mustache">
   <table>
     <tbody>
-      {{#rows}}
+      {{#hits}}
         <tr>
-          <td>{{.}}</td>
+          <td>{{book}}, chapter {{chpater}}, verse {{verse}}: {{text}}</td>
         </tr>
-      {{/rows}}
+      {{/hits}}
     </tbody>
   </table>
 </script>
 
 <script>
-
-        document.getElementById('query-form').addEventListener('submit', async function(e) {
-          e.preventDefault();
-
-          const query = document.getElementById('query-input').value;
-          const encodedQuery = encodeURIComponent(query);
-          const url = `/search?q=${encodedQuery}`;
-
-          try {
-            const response = await fetch(url);
-
-            if (!response.ok) {
-              document.getElementById('results-container').innerText = 'Error fetching results.';
-              return;
-            }
-
-            const data = await response.json();
-            renderTable(data);
-          } catch (err) {
-            document.getElementById('results-container').innerText = 'Network or server error.';
-            console.error(err);
-          }
-        });
-
-        function renderTable(data) {
-          const template = document.getElementById('table-template').innerHTML;
-          const html = Mustache.render(template, data);
-
-          document.getElementById('results-container').innerHTML = html;
-        }
-
 
         // ----------------------------------------------------------------------------------------------------------
         // based on the https://gist.github.com/joews/9697914 example usage of https://www.jasondavies.com/wordcloud/
@@ -84,7 +53,7 @@
             //Draw the word cloud
             function draw(words) {
                 var cloud = svg.selectAll("g text")
-                                .data(words, function(d) { return d.text; })
+                                .data(words, function(d) { return d.word; })
 
                 //Entering words
                 cloud.enter()
@@ -93,13 +62,13 @@
                     .style("fill", function(d, i) { return fill(i); })
                     .attr("text-anchor", "middle")
                     .attr('font-size', 1)
-                    .text(function(d) { return d.text; });
+                    .text(function(d) { return d.word; });
 
                 //Entering and existing words
                 cloud
                     .transition()
                         .duration(600)
-                        .style("font-size", function(d) { return d.size + "px"; })
+                        .style("font-size", function(d) { return d.score + "px"; })
                         .attr("transform", function(d) {
                             return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
                         })
@@ -124,12 +93,19 @@
                 //The outside world will need to call this function, so make it part
                 // of the wordCloud return value.
                 update: function(words) {
+                    const maxScore = Math.max(...words.map(w => w.score));
+                    const minScore = Math.min(...words.map(w => w.score));
+                    const desiredMax = 100;
+                    const scale = desiredMax / maxScore;
+                    const scaledWords = words.map(w => ({"word": w.word, "score": w.score * scale }));
+                    // console.log("max "+maxScore);
+                    // console.log("min "+minScore);
                     d3.layout.cloud().size([500, 500])
-                        .words(words)
+                        .words(scaledWords)
                         .padding(5)
                         .rotate(function() { return ~~(Math.random() * 2) * 90; })
                         .font("Impact")
-                        .fontSize(function(d) { return d.size; })
+                        .fontSize(function(d) { return d.score; })
                         .on("end", draw)
                         .start();
                 }
@@ -152,7 +128,7 @@
                     .replace(/[!\.,:;\?]/g, '')
                     .split(' ')
                     .map(function(d) {
-                        return {text: d, size: 10 + Math.random() * 60};
+                        return {word: d, score: 10 + Math.random() * 60};
                     })
         }
 
@@ -171,6 +147,39 @@
 
         //Start cycling through the demo data
         showNewWords(myWordCloud);
+
+        // ----------------------------------------------------------------------------------------------------------
+
+        document.getElementById('query-form').addEventListener('submit', async function(e) {
+          e.preventDefault();
+
+          const query = document.getElementById('query-input').value;
+          const encodedQuery = encodeURIComponent(query);
+          const url = `/search?q=${encodedQuery}`;
+
+          try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+              document.getElementById('results-container').innerText = 'Error fetching results.';
+              return;
+            }
+
+            const data = await response.json();
+            myWordCloud.update(data.topWords);
+            renderTable(data);
+          } catch (err) {
+            document.getElementById('results-container').innerText = 'Network or server error.';
+            console.error(err);
+          }
+        });
+
+        function renderTable(data) {
+          const template = document.getElementById('table-template').innerHTML;
+          const html = Mustache.render(template, data);
+
+          document.getElementById('results-container').innerHTML = html;
+        }
 </script>
 
 </body>
