@@ -23,6 +23,8 @@ dependencies {
     implementation 'org.apache.lucene:lucene-core:10.2.1'
     implementation 'org.apache.lucene:lucene-analysis-common:10.2.1'
     implementation 'org.apache.lucene:lucene-queryparser:10.2.1'
+    implementation 'io.javalin:javalin:6.6.0'
+    implementation 'org.slf4j:slf4j-simple:2.0.16'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
