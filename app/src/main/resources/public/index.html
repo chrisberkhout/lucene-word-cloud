@@ -13,15 +13,16 @@
         width: 960px;
         margin: auto;
         margin-bottom: 1em;
-        margin-top: 20px;
+        margin-top: 15px;
       }
 
       /* facets styling */
       .bar {
-        fill: steelblue;
+        fill: silver;
       }
       .label {
         font-size: 9px;
+        fill: dimgray;
         text-anchor: end;
       }
     </style>
@@ -33,10 +34,12 @@
       <svg width="960" height="180"></svg>
     </div>
 
-    <form id="query-form">
+    <div>
+      <form id="query-form">
         <input type="text" id="query-input" placeholder="Enter query" required>
         <button type="submit">Search</button>
-    </form>
+      </form>
+    </div>
 
     <div id="results-container"></div>
 
