@@ -3,6 +3,11 @@ package org.example;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.facet.*;
+import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
@@ -24,6 +29,8 @@ public class SectionIndex {
 
     private Directory dir;
     private Analyzer analyzer;
+
+    private FacetsConfig facetsConfig = new FacetsConfig();
 
     public SectionIndex() {
         try {
@@ -75,10 +82,10 @@ public class SectionIndex {
         Document doc = new Document();
 
         doc.add(new TextField("book_name", section.bookName(), Field.Store.YES));
-        doc.add(new KeywordField("book_name.keyword", section.bookName(), Field.Store.NO));
 
         doc.add(new LongPoint("book", section.book())); // filtering
-        doc.add(new NumericDocValuesField("book", section.book())); // sorting / faceting
+        doc.add(new SortedSetDocValuesFacetField("book", Integer.toString(section.book())));
+//        doc.add(new NumericDocValuesField("book", section.book())); // sorting / faceting
         doc.add(new StoredField("book", section.book())); // retrieval
 
         doc.add(new LongPoint("chapter", section.chapter())); // filtering
@@ -103,7 +110,7 @@ public class SectionIndex {
 //            section.verse().map(v -> ", verse "+v).orElse("")
 //        );
 
-        indexWriter.addDocument(doc);
+        indexWriter.addDocument(facetsConfig.build(doc));
     }
 
     public List<TopWords.ScoredWord> getScoredWords() {
@@ -149,7 +156,27 @@ public class SectionIndex {
             }
 
             // scored top N search
-            TopDocs topDocs = searcher.search(q, 10);
+
+            FacetsCollectorManager fcm = new FacetsCollectorManager();
+            FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 10, fcm);
+            TopDocs topDocs = fr.topDocs();
+
+            FacetsCollector fc = fr.facetsCollector();
+            SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
+            Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
+            FacetResult facetResult = facets.getAllChildren("book");
+
+            System.out.println("Facet counts for 'book':");
+            int[] hitsByBook = new int[66];
+            if (facetResult != null) {
+                for (LabelAndValue lv : facetResult.labelValues) {
+                    System.out.println("  " + lv.label + " (" + lv.value + ")");
+                    hitsByBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
+                }
+            } else {
+                System.out.println("(none)");
+            }
+
             ScoreDoc[] scoreDocs = topDocs.scoreDocs;
             System.out.println("totalHits: "+topDocs.totalHits.value());
             System.out.println("");
@@ -229,7 +256,8 @@ public class SectionIndex {
                 ((end-start) / 1_000_000),
                 topDocs.totalHits.value(),
                 hits,
-                tw.getWords()
+                tw.getWords(),
+                hitsByBook
             );
 
             return qr;

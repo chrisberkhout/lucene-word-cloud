@@ -1,186 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <title>Lucene Word Cloud</title>
     <script src="https://d3js.org/d3.v3.min.js"></script>
     <script src="https://unpkg.com/d3-cloud/build/d3.layout.cloud.js"></script>
     <script src="https://unpkg.com/mustache@4.2.0/mustache.min.js"></script>
     <style>
+      body {
+        position: relative;
+        font-family: "Helvetica Neue", sans-serif;
+        width: 960px;
+        margin: auto;
+        margin-bottom: 1em;
+        margin-top: 20px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <div id="wordcloud"></div>
 
-<div id="wordcloud"></div>
+    <form id="query-form">
+        <input type="text" id="query-input" placeholder="Enter query" required>
+        <button type="submit">Search</button>
+    </form>
 
-<form id="query-form">
-    <input type="text" id="query-input" placeholder="Enter query" required>
-    <button type="submit">Search</button>
-</form>
+    <div id="results-container"></div>
 
-<div id="results-container"></div>
+    <script id="table-template" type="x-tmpl-mustache">
+      <table>
+        <tbody>
+          {{#hits}}
+            <tr>
+              <td>{{book}} {{chapter}}:{{verse}} {{text}}</td>
+            </tr>
+          {{/hits}}
+        </tbody>
+      </table>
+    </script>
 
-<script id="table-template" type="x-tmpl-mustache">
-  <table>
-    <tbody>
-      {{#hits}}
-        <tr>
-          <td>{{book}}, chapter {{chpater}}, verse {{verse}}: {{text}}</td>
-        </tr>
-      {{/hits}}
-    </tbody>
-  </table>
-</script>
+    <script>
+      // based on the https://gist.github.com/joews/9697914
 
-<script>
+      // Encapsulate the word cloud functionality
+      function wordCloud(selector) {
 
-        // ----------------------------------------------------------------------------------------------------------
-        // based on the https://gist.github.com/joews/9697914 example usage of https://www.jasondavies.com/wordcloud/
+          var fill = d3.scale.category20b();
 
-        // Encapsulate the word cloud functionality
-        function wordCloud(selector) {
-
-            var fill = d3.scale.category20();
-
-            //Construct the word cloud's SVG element
-            var svg = d3.select(selector).append("svg")
-                .attr("width", 500)
-                .attr("height", 500)
-                .append("g")
-                .attr("transform", "translate(250,250)");
+          //Construct the word cloud's SVG element
+          var svg = d3.select(selector).append("svg")
+              .attr("width", 960)
+              .attr("height", 600)
+              .append("g")
+              .attr("transform", "translate(480,300)");
 
 
-            //Draw the word cloud
-            function draw(words) {
-                var cloud = svg.selectAll("g text")
-                                .data(words, function(d) { return d.word; })
+          //Draw the word cloud
+          function draw(words) {
+              var cloud = svg.selectAll("g text")
+                              .data(words, function(d) { return d.word; })
 
-                //Entering words
-                cloud.enter()
-                    .append("text")
-                    .style("font-family", "Impact")
-                    .style("fill", function(d, i) { return fill(i); })
-                    .attr("text-anchor", "middle")
-                    .attr('font-size', 1)
-                    .text(function(d) { return d.word; });
+              //Entering words
+              cloud.enter()
+                  .append("text")
+                  .style("font-family", "Impact")
+                  .style("fill", function(d, i) { return fill(i); })
+                  .attr("text-anchor", "middle")
+                  //.attr('font-size', 1)
+                  .text(function(d) { return d.word; });
 
-                //Entering and existing words
-                cloud
-                    .transition()
-                        .duration(600)
-                        .style("font-size", function(d) { return d.score + "px"; })
-                        .attr("transform", function(d) {
-                            return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
-                        })
-                        .style("fill-opacity", 1);
+              //Entering and existing words
+              cloud
+                  .transition()
+                      .duration(600)
+                      .style("font-size", function(d) { return d.score + "px"; })
+                      .attr("transform", function(d) {
+                          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                      })
+                      .style("fill-opacity", 1);
 
-                //Exiting words
-                cloud.exit()
-                    .transition()
-                        .duration(200)
-                        .style('fill-opacity', 1e-6)
-                        .attr('font-size', 1)
-                        .remove();
-            }
-
-
-            //Use the module pattern to encapsulate the visualisation code. We'll
-            // expose only the parts that need to be public.
-            return {
-
-                //Recompute the word cloud for a new set of words. This method will
-                // asycnhronously call draw when the layout has been computed.
-                //The outside world will need to call this function, so make it part
-                // of the wordCloud return value.
-                update: function(words) {
-                    const maxScore = Math.max(...words.map(w => w.score));
-                    const minScore = Math.min(...words.map(w => w.score));
-                    const desiredMax = 100;
-                    const scale = desiredMax / maxScore;
-                    const scaledWords = words.map(w => ({"word": w.word, "score": w.score * scale }));
-                    // console.log("max "+maxScore);
-                    // console.log("min "+minScore);
-                    d3.layout.cloud().size([500, 500])
-                        .words(scaledWords)
-                        .padding(5)
-                        .rotate(function() { return ~~(Math.random() * 2) * 90; })
-                        .font("Impact")
-                        .fontSize(function(d) { return d.score; })
-                        .on("end", draw)
-                        .start();
-                }
-            }
-
-        }
-
-        //Some sample data - http://en.wikiquote.org/wiki/Opening_lines
-        var words = [
-            "You don't know about me without you have read a book called The Adventures of Tom Sawyer but that ain't no matter.",
-            "The boy with fair hair lowered himself down the last few feet of rock and began to pick his way toward the lagoon.",
-            "When Mr. Bilbo Baggins of Bag End announced that he would shortly be celebrating his eleventy-first birthday with a party of special magnificence, there was much talk and excitement in Hobbiton.",
-            "It was inevitable: the scent of bitter almonds always reminded him of the fate of unrequited love."
-        ]
-
-        //Prepare one of the sample sentences by removing punctuation,
-        // creating an array of words and computing a random size attribute.
-        function getWords(i) {
-            return words[i]
-                    .replace(/[!\.,:;\?]/g, '')
-                    .split(' ')
-                    .map(function(d) {
-                        return {word: d, score: 10 + Math.random() * 60};
-                    })
-        }
-
-        //This method tells the word cloud to redraw with a new set of words.
-        //In reality the new words would probably come from a server request,
-        // user input or some other source.
-        function showNewWords(vis, i) {
-            i = i || 0;
-
-            vis.update(getWords(i ++ % words.length))
-            // setTimeout(function() { showNewWords(vis, i + 1)}, 2000)
-        }
-
-        //Create a new instance of the word cloud visualisation.
-        var myWordCloud = wordCloud('#wordcloud');
-
-        //Start cycling through the demo data
-        showNewWords(myWordCloud);
-
-        // ----------------------------------------------------------------------------------------------------------
-
-        document.getElementById('query-form').addEventListener('submit', async function(e) {
-          e.preventDefault();
-
-          const query = document.getElementById('query-input').value;
-          const encodedQuery = encodeURIComponent(query);
-          const url = `/search?q=${encodedQuery}`;
-
-          try {
-            const response = await fetch(url);
-
-            if (!response.ok) {
-              document.getElementById('results-container').innerText = 'Error fetching results.';
-              return;
-            }
-
-            const data = await response.json();
-            myWordCloud.update(data.topWords);
-            renderTable(data);
-          } catch (err) {
-            document.getElementById('results-container').innerText = 'Network or server error.';
-            console.error(err);
+              //Exiting words
+              cloud.exit()
+                  .transition()
+                      .duration(200)
+                      .style('fill-opacity', 1e-6)
+                      //.attr('font-size', 1)
+                      .remove();
           }
-        });
 
-        function renderTable(data) {
-          const template = document.getElementById('table-template').innerHTML;
-          const html = Mustache.render(template, data);
+          //Use the module pattern to encapsulate the visualisation code. We'll
+          // expose only the parts that need to be public.
+          return {
 
-          document.getElementById('results-container').innerHTML = html;
+
+              //Recompute the word cloud for a new set of words. This method will
+              // asycnhronously call draw when the layout has been computed.
+              //The outside world will need to call this function, so make it part
+              // of the wordCloud return value.
+              update: function(words) {
+
+                  // TODO tidy the scaling / sizing logic
+
+                  const maxScore = Math.max(...words.map(w => w.score));
+                  const minScore = Math.min(...words.map(w => w.score));
+
+                  const desiredMax = 10000;
+                  const scale = desiredMax / maxScore;
+                  const scaledWords = words.map(w => ({"word": w.word, "score": Math.sqrt(w.score * scale) }));
+
+                  d3.layout.cloud()
+                      .size([960, 600])
+                      .words(scaledWords)
+                      .padding(2)
+                      .spiral("archimedean")
+                      .rotate(function() { return (~~(Math.random() * 6) - 3) * 30; })
+                      .font("Impact")
+                      .text(function(d) { return d.word; })
+                      .fontSize(function(d) { return d.score; })
+                      .on("end", draw)
+                      .start();
+              }
+          }
+
+      }
+
+      //Create a new instance of the word cloud visualisation.
+      var myWordCloud = wordCloud('#wordcloud');
+
+      // ----------------------------------------------------------------------------------------------------------
+
+      document.getElementById('query-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const query = document.getElementById('query-input').value;
+        const encodedQuery = encodeURIComponent(query);
+        const url = `/search?q=${encodedQuery}`;
+
+        try {
+          const response = await fetch(url);
+
+          if (!response.ok) {
+            document.getElementById('results-container').innerText = 'Error fetching results.';
+            return;
+          }
+
+          const data = await response.json();
+          myWordCloud.update(data.topWords);
+          renderTable(data);
+        } catch (err) {
+          document.getElementById('results-container').innerText = 'Network or server error.';
+          console.error(err);
         }
-</script>
+      });
 
-</body>
+      function renderTable(data) {
+        const template = document.getElementById('table-template').innerHTML;
+        const html = Mustache.render(template, data);
+
+        document.getElementById('results-container').innerHTML = html;
+      }
+
+    </script>
+
+  </body>
 </html>

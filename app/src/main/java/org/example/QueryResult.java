@@ -6,7 +6,8 @@ public record QueryResult(
     long time,
     long totalHits,
     List<Hit> hits,
-    List<TopWords.ScoredWord> topWords
+    List<TopWords.ScoredWord> topWords,
+    int[] hitsByBook
 ) {
     public record Hit(
         double score,

@@ -7,7 +7,7 @@ import java.util.PriorityQueue;
 public class TopWords {
 
     public record ScoredWord(String word, double score) {}
-    public static int limit = 100;
+    public static int limit = 200;
 
     PriorityQueue<ScoredWord> topTerms;
 
