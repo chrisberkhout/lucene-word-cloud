@@ -15,10 +15,23 @@
         margin-bottom: 1em;
         margin-top: 20px;
       }
+
+      /* facets styling */
+      .bar {
+        fill: steelblue;
+      }
+      .label {
+        font-size: 9px;
+        text-anchor: end;
+      }
     </style>
   </head>
   <body>
     <div id="wordcloud"></div>
+
+    <div id="facets">
+      <svg width="960" height="180"></svg>
+    </div>
 
     <form id="query-form">
         <input type="text" id="query-input" placeholder="Enter query" required>
@@ -40,6 +53,53 @@
     </script>
 
     <script>
+
+      function drawFacets(data) {
+        var svg = d3.select("#facets svg");
+        var width = 960;
+        var height = 100;
+        var barPadding = 1;
+        var barWidth = width / 66;
+
+        var yScale = d3.scale.linear().range([0, height]);
+        yScale.domain([0, d3.max(data, d => d)]);
+
+        // Bars
+        var bars = svg.selectAll("rect").data(data, (d, i) => i);
+
+        bars.enter()
+          .append("rect")
+          .attr("x", function(d, i) { return i * barWidth; })
+          .attr("y", function(d) { return height - yScale(d); })
+          .attr("width", barWidth - barPadding)
+          .attr("height", function(d) { return yScale(d); })
+          .attr("class", "bar");
+
+        bars.transition()
+          .duration(500)
+          .attr("y", function(d) { return height - yScale(d); })
+          .attr("height", function(d) { return yScale(d); });
+
+        bars.exit().remove();
+
+        // Labels
+        var labelStrings = ["Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Solomon","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi","Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"];
+
+        svg.selectAll("text")
+          .data(labelStrings)
+          .enter()
+          .append("text")
+            .attr("transform", (d, i) => {
+              const x = i * barWidth + barWidth / 2;
+              const y = height + 3;
+              return `translate(${x}, ${y}) rotate(-90)`;
+            })
+            .attr("dy", "0.35em")
+            .attr("class", "label")
+            .text(d => d);
+      }
+
+
       // based on the https://gist.github.com/joews/9697914
 
       // Encapsulate the word cloud functionality
@@ -127,6 +187,13 @@
       //Create a new instance of the word cloud visualisation.
       var myWordCloud = wordCloud('#wordcloud');
 
+      // TODO proper initial setup
+      drawFacets(
+        d3.range(66).map(function(i) {
+          return Math.random() * 100;
+        })
+      );
+
       // ----------------------------------------------------------------------------------------------------------
 
       document.getElementById('query-form').addEventListener('submit', async function(e) {
@@ -146,6 +213,7 @@
 
           const data = await response.json();
           myWordCloud.update(data.topWords);
+          drawFacets(data.hitsByBook);
           renderTable(data);
         } catch (err) {
           document.getElementById('results-container').innerText = 'Network or server error.';
