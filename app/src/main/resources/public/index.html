@@ -277,12 +277,14 @@
       //Create a new instance of the word cloud visualisation.
       var myWordCloud = wordCloud('#wordcloud');
 
-      // TODO proper initial setup
-      drawFacets(
-        d3.range(66).map(function(i) {
-          return Math.random() * 100;
-        })
-      );
+      // initial setup
+      (async function () {
+        const initUrl = `http://localhost:7070/search`;
+        const initResponse = await fetch(initUrl);
+        const initData = await initResponse.json();
+        myWordCloud.update(initData.topWords);
+        drawFacets(initData.hitsByBook);
+      })();
 
       // ----------------------------------------------------------------------------------------------------------
 
