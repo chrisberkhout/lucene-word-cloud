@@ -14,6 +14,9 @@
         margin: auto;
         margin-bottom: 1em;
         margin-top: 15px;
+
+        justify-content: center;
+        align-items: center;
       }
 
       /* facets styling */
@@ -25,6 +28,81 @@
         fill: dimgray;
         text-anchor: end;
       }
+
+      /* search bar style */
+
+      #query {
+        margin-top: 45px;
+        margin-bottom: 15px;
+      }
+
+      #query-form {
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 4px;
+        display: flex;
+        width: 640px;
+        margin: auto;
+      }
+
+      #query-input {
+        border: none;
+        background: transparent;
+        padding: 8px 12px;
+        font-size: 16px;
+        outline: none;
+        flex: 1;
+      }
+
+      #query-button {
+        border: none;
+        background: transparent;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 16px;
+        float: right;
+      }
+
+      #query-button:hover {
+        background-color: #e0e0e0;
+        border-radius: 4px;
+      }
+
+      /* results style */
+
+      #results-description {
+        font-family: "Helvetica Neue", sans-serif;
+        font-size: 14px;
+        margin: auto;
+        margin-top: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+        color: dimgray;
+      }
+
+      #results {
+        margin-bottom: 50px;
+      }
+      table {
+        font-family: Georgia, serif;
+        border-spacing: 0 8px;
+      }
+
+      td.ref {
+        width: 160px;
+        color: saddleBrown;
+        vertical-align: top;
+        text-align: right;
+        padding-right: 20px;
+      }
+
+      td.text {
+        color: #444;
+        font-size: 0.95em;
+        padding-right: 30px;
+      }
+
     </style>
   </head>
   <body>
@@ -34,21 +112,31 @@
       <svg width="960" height="180"></svg>
     </div>
 
-    <div>
+    <div id="query">
       <form id="query-form">
-        <input type="text" id="query-input" placeholder="Enter query" required>
-        <button type="submit">Search</button>
+        <input id="query-input" type="text" placeholder="Enter query" required>
+        <button id="query-button" type="submit">🔍</button>
       </form>
     </div>
 
-    <div id="results-container"></div>
+    <div id="results-description">
+    </div>
 
-    <script id="table-template" type="x-tmpl-mustache">
+    <script id="results-description-template" type="x-tmpl-mustache">
+      {{totalHits}} verse{{^singleHit}}s{{/singleHit}} found in
+      {{time}}ms{{^showingAll}}, showing {{showingNum}}{{/showingAll}}
+    </script>
+
+    <div id="results">
+    </div>
+
+    <script id="results-template" type="x-tmpl-mustache">
       <table>
         <tbody>
           {{#hits}}
             <tr>
-              <td>{{book}} {{chapter}}:{{verse}} {{text}}</td>
+              <td class="ref">{{book}} {{chapter}}:{{verse}}</td>
+              <td class="text">{{text}}</td>
             </tr>
           {{/hits}}
         </tbody>
@@ -113,9 +201,9 @@
           //Construct the word cloud's SVG element
           var svg = d3.select(selector).append("svg")
               .attr("width", 960)
-              .attr("height", 600)
+              .attr("height", 500)
               .append("g")
-              .attr("transform", "translate(480,300)");
+              .attr("transform", "translate(480,250)");
 
 
           //Draw the word cloud
@@ -165,14 +253,13 @@
                   // TODO tidy the scaling / sizing logic
 
                   const maxScore = Math.max(...words.map(w => w.score));
-                  const minScore = Math.min(...words.map(w => w.score));
 
-                  const desiredMax = 10000;
-                  const scale = desiredMax / maxScore;
+                  const desiredMax = 80;
+                  const scale = desiredMax * desiredMax / maxScore;
                   const scaledWords = words.map(w => ({"word": w.word, "score": Math.sqrt(w.score * scale) }));
 
                   d3.layout.cloud()
-                      .size([960, 600])
+                      .size([960, 500])
                       .words(scaledWords)
                       .padding(2)
                       .spiral("archimedean")
@@ -210,26 +297,33 @@
           const response = await fetch(url);
 
           if (!response.ok) {
-            document.getElementById('results-container').innerText = 'Error fetching results.';
+            document.getElementById('results').innerText = 'Error fetching results.';
             return;
           }
 
           const data = await response.json();
           myWordCloud.update(data.topWords);
           drawFacets(data.hitsByBook);
-          renderTable(data);
+
+          data.singleHit = data.hits.length == 1;
+          data.showingAll = data.hits.length == data.totalHits;
+          data.showingNum = data.hits.length;
+
+          document.getElementById('results-description').innerHTML = Mustache.render(
+            document.getElementById('results-description-template').innerHTML,
+            data
+          );
+          document.getElementById('results').innerHTML = Mustache.render(
+            document.getElementById('results-template').innerHTML,
+            data
+          );
+
         } catch (err) {
-          document.getElementById('results-container').innerText = 'Network or server error.';
+          document.getElementById('results-description').innerText = 'Network or server error';
+          document.getElementById('results').innerText = "";
           console.error(err);
         }
       });
-
-      function renderTable(data) {
-        const template = document.getElementById('table-template').innerHTML;
-        const html = Mustache.render(template, data);
-
-        document.getElementById('results-container').innerHTML = html;
-      }
 
     </script>
 
