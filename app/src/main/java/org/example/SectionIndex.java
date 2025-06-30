@@ -158,7 +158,7 @@ public class SectionIndex {
             // scored top N search
 
             FacetsCollectorManager fcm = new FacetsCollectorManager();
-            FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 10, fcm);
+            FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 100, fcm);
             TopDocs topDocs = fr.topDocs();
 
             FacetsCollector fc = fr.facetsCollector();
