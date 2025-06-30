@@ -138,7 +138,25 @@ public class SectionIndex {
         return tw.getWords();
     }
 
+    public QueryResult nullQuery() {
+        int[] versesCountPerChapter = new int[]{
+            1533, 1213, 859, 1288, 959, 658, 618, 85, 810, 695, 816, 719, 942, 822, 280, 406, 167, 1070, 2461, 915, 222, 117, 1292, 1364, 154, 1273, 357, 197, 73, 146, 21, 48, 105, 47, 56, 53, 38, 211, 55, 1071, 678, 1151, 879, 1007, 433, 437, 257, 149, 155, 104, 95, 89, 47, 113, 83, 46, 25, 303, 108, 105, 61, 105, 13, 14, 25, 404
+        };
+        System.out.println("returning global result for null query");
+
+        return new QueryResult(
+            0,
+            0,
+            List.of(),
+            getScoredWords(),
+            versesCountPerChapter
+        );
+    }
+
     public QueryResult query(String qStr) {
+        if (qStr == null || qStr == "") {
+            return nullQuery();
+        }
         long start = System.nanoTime();
         List<QueryResult.Hit> hits = new ArrayList<>();
         try {
