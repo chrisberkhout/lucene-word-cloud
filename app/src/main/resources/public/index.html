@@ -12,7 +12,6 @@
         margin: 40px auto;
         font-family: "Helvetica Neue", sans-serif;
       }
-
       #facet-counts {
         margin-top: 15px;
       }
@@ -24,7 +23,6 @@
         fill: dimgray;
         text-anchor: end;
       }
-
       #search-bar {
         margin-top: 45px;
         margin-bottom: 15px;
@@ -57,7 +55,6 @@
         background-color: #e0e0e0;
         border-radius: 4px;
       }
-
       #results-description {
         font-size: 14px;
         margin: auto;
@@ -66,7 +63,6 @@
         text-align: center;
         color: dimgray;
       }
-
       #results table {
         font-family: Georgia, serif;
         border-spacing: 0 8px;
@@ -101,12 +97,12 @@
 
     <div id="results-description"></div>
 
+    <div id="results"></div>
+
     <script id="results-description-template" type="x-tmpl-mustache">
       {{totalHits}} verse{{^singleHit}}s{{/singleHit}} found in
       {{time}}ms{{^showingAll}}, showing {{showingNum}}{{/showingAll}}
     </script>
-
-    <div id="results"></div>
 
     <script id="results-template" type="x-tmpl-mustache">
       <table>
@@ -123,17 +119,19 @@
 
     <script>
       const pageWidth = 960;
+      // const apiBaseUrl = "http://localhost:7070";
+      const apiBaseUrl = "";
 
       function drawFacetCounts(data) {
-        var svg = d3.select("#facet-counts svg");
-        var height = 100;
-        var barPadding = 1;
-        var barWidth = pageWidth / 66;
+        const svg = d3.select("#facet-counts svg");
+        const height = 100;
+        const barPadding = 1;
+        const barWidth = pageWidth / 66;
 
-        var yScale = d3.scale.linear().range([0, height]);
+        const yScale = d3.scale.linear().range([0, height]);
         yScale.domain([0, d3.max(data, d => d)]);
 
-        var bars = svg.selectAll("rect").data(data, (d, i) => i);
+        const bars = svg.selectAll("rect").data(data, (d, i) => i);
 
         bars.enter()
           .append("rect")
@@ -150,7 +148,7 @@
 
         bars.exit().remove();
 
-        var labelStrings = [
+        const labelStrings = [
           "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua",
           "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
           "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
@@ -180,16 +178,16 @@
       // based on the https://gist.github.com/joews/9697914
       function createWordcloud(selector) {
         const wordcloudHeight = 500;
-        var fill = d3.scale.category20b();
+        const fill = d3.scale.category20b();
 
-        var svg = d3.select(selector).append("svg")
+        const svg = d3.select(selector).append("svg")
           .attr("width", pageWidth)
           .attr("height", wordcloudHeight)
           .append("g")
           .attr("transform", `translate(${pageWidth/2},${wordcloudHeight/2})`);
 
         function draw(words) {
-          var cloud = svg.selectAll("g text").data(words, d => d.word)
+          const cloud = svg.selectAll("g text").data(words, d => d.word)
 
           cloud.enter()
             .append("text")
@@ -207,7 +205,7 @@
           cloud.exit()
             .transition()
             .duration(200)
-            .style('fill-opacity', 1e-6)
+            .style("fill-opacity", 1e-6)
             .remove();
         }
 
@@ -235,59 +233,72 @@
         }
       }
 
-      var wordcloud = createWordcloud('#wordcloud');
+      async function searchHandler(e) {
+        e.preventDefault();
 
-      // TODO: tidy from here down
+        const query = document.getElementById("search-bar-input").value;
+        const encodedQuery = encodeURIComponent(query);
+        const url = `${apiBaseUrl}/search?q=${encodedQuery}`;
+        const resultsDescriptionDiv = document.getElementById("results-description");
+        const resultsDiv = document.getElementById("results");
+
+        let response;
+        try {
+          response = await fetch(url);
+        } catch (err) {
+          resultsDescriptionDiv.innerText = "Network or server error";
+          resultsDiv.innerText = "";
+          return;
+        }
+
+        if (!response.ok) {
+          resultsDescriptionDiv.innerText = "Error fetching results";
+          resultsDiv.innerText = "";
+          return;
+        }
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (err) {
+          resultsDescriptionDiv.innerText = "Error parsing server response";
+          resultsDiv.innerText = "";
+          return;
+        }
+
+        data.singleHit = data.hits.length === 1;
+        data.showingAll = data.hits.length === data.totalHits;
+        data.showingNum = data.hits.length;
+
+        wordcloud.update(data.topWords);
+        drawFacetCounts(data.hitsByBook);
+
+        resultsDescriptionDiv.innerHTML = Mustache.render(
+          document.getElementById("results-description-template").innerHTML,
+          data
+        );
+        resultsDiv.innerHTML = Mustache.render(
+          document.getElementById("results-template").innerHTML,
+          data
+        );
+      }
+
       // initial setup
+
+      const wordcloud = createWordcloud("#wordcloud");
+      document.getElementById("search-bar-form").addEventListener("submit", searchHandler);
       (async function() {
-        const initUrl = `http://localhost:7070/search`;
-        const initResponse = await fetch(initUrl);
-        const initData = await initResponse.json();
+        let initData;
+        try {
+          const initResponse = await fetch(`${apiBaseUrl}/search`);
+          initData = await initResponse.json();
+        } catch (err) {
+          document.getElementById("results-description").innerText = "Error getting initial data";
+          return;
+        }
         wordcloud.update(initData.topWords);
         drawFacetCounts(initData.hitsByBook);
       })();
-
-      // ----------------------------------------------------------------------------------------------------------
-
-      document.getElementById('search-bar-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        const query = document.getElementById('search-bar-input').value;
-        const encodedQuery = encodeURIComponent(query);
-        const url = `http://localhost:7070/search?q=${encodedQuery}`;
-
-        try {
-          const response = await fetch(url);
-
-          if (!response.ok) {
-            document.getElementById('results').innerText = 'Error fetching results.';
-            return;
-          }
-
-          const data = await response.json();
-          wordcloud.update(data.topWords);
-          drawFacetCounts(data.hitsByBook);
-
-          data.singleHit = data.hits.length == 1;
-          data.showingAll = data.hits.length == data.totalHits;
-          data.showingNum = data.hits.length;
-
-          document.getElementById('results-description').innerHTML = Mustache.render(
-            document.getElementById('results-description-template').innerHTML,
-            data
-          );
-          document.getElementById('results').innerHTML = Mustache.render(
-            document.getElementById('results-template').innerHTML,
-            data
-          );
-
-        } catch (err) {
-          document.getElementById('results-description').innerText = 'Network or server error';
-          document.getElementById('results').innerText = "";
-          console.error(err);
-        }
-      });
-
     </script>
   </body>
 </html>
