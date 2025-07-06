@@ -210,12 +210,12 @@
         }
 
         return {
-          update: function(words) {
+          update: function(words, scaleFn = n => n) {
             const maxScore = Math.max(...words.map(w => w.score));
-            const scaleFn = (n) => 80 * Math.sqrt(n / maxScore);
+            const sizeFn = (n) => 80 * scaleFn(n / maxScore);
             const sizedWords = words.map(w => ({
               "word": w.word,
-              "size": scaleFn(w.score)
+              "size": sizeFn(w.score)
             }));
 
             d3.layout.cloud()
@@ -270,7 +270,7 @@
         data.showingAll = data.hits.length === data.totalHits;
         data.showingNum = data.hits.length;
 
-        wordcloud.update(data.topWords);
+        wordcloud.update(data.topWords, Math.sqrt);
         drawFacetCounts(data.hitsByBook);
 
         resultsDescriptionDiv.innerHTML = Mustache.render(
@@ -296,7 +296,7 @@
           document.getElementById("results-description").innerText = "Error getting initial data";
           return;
         }
-        wordcloud.update(initData.topWords);
+        wordcloud.update(initData.topWords, n => n);
         drawFacetCounts(initData.hitsByBook);
       })();
     </script>
