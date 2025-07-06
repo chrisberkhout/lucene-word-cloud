@@ -32,14 +32,6 @@ public class App {
                 QueryResult qr = index.query(q);
                 ctx.json(qr);
             })
-            .before(ctx -> {
-                ctx.header("Access-Control-Allow-Origin", "*");
-                ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-            })
-            .options("/*", ctx -> {
-                ctx.status(204);
-            })
             .start(7070);
     }
 }
