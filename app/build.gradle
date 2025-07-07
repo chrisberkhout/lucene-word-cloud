@@ -41,6 +41,7 @@ application {
 }
 
 run {
+    workingDir = rootProject.projectDir
     jvmArgs += ['--enable-native-access=ALL-UNNAMED']
     jvmArgs += ['--add-modules', 'jdk.incubator.vector']
 }
