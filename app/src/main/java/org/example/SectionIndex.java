@@ -263,7 +263,7 @@ public class SectionIndex {
 
             for (Map.Entry<String,Freqs> e : freqs.entrySet()) {
                 Freqs f = e.getValue();
-                double idf = Math.log((reader.numDocs() + 1.0) / (f.docs + 1.0));
+                double idf = Math.log((topDocs.totalHits.value() + 1.0) / (f.docs + 1.0));
                 double tfidf = f.total * idf;
                 tw.maybeAddWord(e.getKey(), tfidf);
             }
