@@ -81,21 +81,21 @@ public class SectionIndex {
     private void indexSection(IndexWriter indexWriter, Bible.Section section) throws IOException {
         Document doc = new Document();
 
-        doc.add(new TextField("book_name", section.bookName(), Field.Store.YES));
+        doc.add(new TextField("book", section.bookName(), Field.Store.YES));
 
-        doc.add(new LongPoint("book", section.book())); // filtering
-        doc.add(new SortedSetDocValuesFacetField("book", Integer.toString(section.book())));
-//        doc.add(new NumericDocValuesField("book", section.book())); // sorting / faceting
-        doc.add(new StoredField("book", section.book())); // retrieval
+        doc.add(new LongPoint("book_num", section.book())); // filtering
+        doc.add(new SortedSetDocValuesFacetField("book_num", Integer.toString(section.book())));
+//        doc.add(new NumericDocValuesField("book_num", section.book())); // sorting / faceting
+        doc.add(new StoredField("book_num", section.book())); // retrieval
 
-        doc.add(new LongPoint("chapter", section.chapter())); // filtering
-        doc.add(new NumericDocValuesField("chapter", section.chapter())); // sorting / faceting
-        doc.add(new StoredField("chapter", section.chapter())); // retrieval
+        doc.add(new LongPoint("chapter_num", section.chapter())); // filtering
+        doc.add(new NumericDocValuesField("chapter_num", section.chapter())); // sorting / faceting
+        doc.add(new StoredField("chapter_num", section.chapter())); // retrieval
 
         section.verse().ifPresent(v ->{
-            doc.add(new LongPoint("verse", v)); // filtering
-            doc.add(new NumericDocValuesField("verse", v)); // sorting / faceting
-            doc.add(new StoredField("verse", v)); // retrieval
+            doc.add(new LongPoint("verse_num", v)); // filtering
+            doc.add(new NumericDocValuesField("verse_num", v)); // sorting / faceting
+            doc.add(new StoredField("verse_num", v)); // retrieval
         });
 
         FieldType textWithTV = new FieldType(TextField.TYPE_STORED) {{
@@ -182,9 +182,9 @@ public class SectionIndex {
             FacetsCollector fc = fr.facetsCollector();
             SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
             Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
-            FacetResult facetResult = facets.getAllChildren("book");
+            FacetResult facetResult = facets.getAllChildren("book_num");
 
-            System.out.println("Facet counts for 'book':");
+            System.out.println("Facet counts for 'book_num':");
             int[] hitsByBook = new int[66];
             if (facetResult != null) {
                 for (LabelAndValue lv : facetResult.labelValues) {
@@ -203,9 +203,9 @@ public class SectionIndex {
                 hits.add(
                     new QueryResult.Hit(
                         scoreDocs[i].score,
-                        doc.get("book_name"),
-                        Long.parseLong(doc.get("chapter")),
-                        Long.parseLong(doc.get("verse")),
+                        doc.get("book"),
+                        Long.parseLong(doc.get("chapter_num")),
+                        Long.parseLong(doc.get("verse_num")),
                         doc.get("text")
                     )
                 );
