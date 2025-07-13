@@ -1,13 +1,6 @@
 package org.example;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import io.javalin.Javalin;
-import io.javalin.http.staticfiles.Location;
-
-import javax.management.Query;
 
 public class App {
     public static void main(String[] args) {
