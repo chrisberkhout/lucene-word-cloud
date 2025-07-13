@@ -10,9 +10,14 @@ public class Bible {
 
     private final Map<Integer, String> bookNames = new HashMap<>();
     private final ArrayList<Section> verses = new ArrayList<>();
+    private final int[] versesPerBook = new int[66];
 
     public List<Section> getVerses() {
         return Collections.unmodifiableList(verses);
+    }
+
+    public int[] getVersesPerBook() {
+        return versesPerBook;
     }
 
     public List<Section> getChapters() {
@@ -89,6 +94,7 @@ public class Bible {
                     verse = Integer.parseInt(line.substring(4, 7));
                     String text = line.substring(8);
                     this.verses.add(new Section(bookName, book, chapter, Optional.of(verse), text));
+                    this.versesPerBook[book-1]++;
                 }
                 line = reader.readLine();
             }

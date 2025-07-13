@@ -39,6 +39,14 @@ public class BibleTest {
     }
 
     @Test
+    void countsVersesPerBookCorrectly() {
+        int[] counts = bible.getVersesPerBook();
+        assertEquals(counts.length, 66);
+        assertEquals(counts[0], 1533);
+        assertEquals(counts[counts.length-1], 404);
+    }
+
+    @Test
     void firstChapterIsCorrect() {
         Bible.Section chapter = bible.getChapters().getFirst();
         assertTrue(chapter.text().startsWith("In the beginning God created the heavens and the earth. Now"));
