@@ -113,8 +113,8 @@ public class SectionIndex {
         indexWriter.addDocument(facetsConfig.build(doc));
     }
 
-    public List<TopWords.ScoredWord> getScoredWords() {
-        TopWords tw = new TopWords();
+    public List<TopTerms.ScoredTerm> getScoredWords() {
+        TopTerms tw = new TopTerms();
         try {
             IndexReader reader = DirectoryReader.open(dir);
             Terms terms = MultiTerms.getTerms(reader, "text");
@@ -129,13 +129,13 @@ public class SectionIndex {
                     long df = termsEnum.docFreq();
                     double idf = Math.log((reader.numDocs() + 1.0) / (df + 1.0));
                     double tfidf = tf * idf;
-                    tw.maybeAddWord(termStr, tfidf);
+                    tw.maybeAddTerm(termStr, tfidf);
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException();
         }
-        return tw.getWords();
+        return tw.getTerms();
     }
 
     public QueryResult nullQuery() {
@@ -260,13 +260,13 @@ public class SectionIndex {
             };
             searcher.search(q, collector);
 
-            TopWords tw = new TopWords();
+            TopTerms tw = new TopTerms();
 
             for (Map.Entry<String,Freqs> e : freqs.entrySet()) {
                 Freqs f = e.getValue();
                 double idf = Math.log((topDocs.totalHits.value() + 1.0) / (f.docs + 1.0));
                 double tfidf = f.total * idf;
-                tw.maybeAddWord(e.getKey(), tfidf);
+                tw.maybeAddTerm(e.getKey(), tfidf);
             }
 
 
@@ -275,7 +275,7 @@ public class SectionIndex {
                 ((end-start) / 1_000_000),
                 topDocs.totalHits.value(),
                 hits,
-                tw.getWords(),
+                tw.getTerms(),
                 hitsByBook
             );
 

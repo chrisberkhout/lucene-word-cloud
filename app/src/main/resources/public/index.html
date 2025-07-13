@@ -210,11 +210,11 @@
         }
 
         return {
-          update: function(words, scaleFn = n => n) {
-            const maxScore = Math.max(...words.map(w => w.score));
+          update: function(terms, scaleFn = n => n) {
+            const maxScore = Math.max(...terms.map(w => w.score));
             const sizeFn = (n) => 80 * scaleFn(n / maxScore);
-            const sizedWords = words.map(w => ({
-              "word": w.word,
+            const sizedWords = terms.map(w => ({
+              "word": w.term,
               "size": sizeFn(w.score)
             }));
 
