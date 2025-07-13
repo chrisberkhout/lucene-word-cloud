@@ -2,11 +2,11 @@ package org.example;
 
 import java.util.List;
 
-public record QueryResult(
+public record SearchResult(
     long time,
     long totalHits,
     List<Hit> hits,
-    List<TopTerms.ScoredTerm> topWords,
+    List<TopTerms.ScoredTerm> topTerms,
     int[] hitsByBook
 ) {
     public record Hit(

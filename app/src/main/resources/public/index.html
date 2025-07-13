@@ -270,7 +270,7 @@
         data.showingAll = data.hits.length === data.totalHits;
         data.showingNum = data.hits.length;
 
-        wordcloud.update(data.topWords);
+        wordcloud.update(data.topTerms);
         drawFacetCounts(data.hitsByBook);
 
         resultsDescriptionDiv.innerHTML = Mustache.render(
@@ -296,7 +296,7 @@
           document.getElementById("results-description").innerText = "Error getting initial data";
           return;
         }
-        wordcloud.update(initData.topWords);
+        wordcloud.update(initData.topTerms);
         drawFacetCounts(initData.hitsByBook);
       })();
     </script>

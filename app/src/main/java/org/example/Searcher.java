@@ -1,122 +1,38 @@
 package org.example;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.*;
 import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SectionIndex {
+public class Searcher {
 
-    private static String indexPath = "index";
-
-    private Directory dir;
     private Analyzer analyzer;
-
+    private IndexReader reader;
     private FacetsConfig facetsConfig = new FacetsConfig();
 
-    public SectionIndex() {
-        try {
-            this.analyzer = CustomAnalyzer.builder()
-                .withTokenizer("standard")
-                .addTokenFilter("lowercase")
-                .addTokenFilter("englishpossessive")
-                .addTokenFilter("stop", new HashMap<>(Map.of(
-                   "format", "wordset",
-                   "ignoreCase", "true",
-                   "words", "stopwords-en.txt" // https://github.com/stopwords-iso/stopwords-iso
-                )))
-                .addTokenFilter("kstem")
-                .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void build(Bible bible) {
-        try {
-            this.dir = FSDirectory.open(Paths.get(indexPath));
-            IndexWriterConfig iwc = new IndexWriterConfig(this.analyzer);
-
-            // overwrite any existing index
-            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-            // keep various files separate
-            iwc.setUseCompoundFile(false);
-
-            IndexWriter writer = new IndexWriter(dir, iwc);
-            // by verse
-            for (Bible.Section verse : bible.getVerses()) {
-                indexSection(writer, verse);
-            }
-
-            // costly but optimizes search performance for static indexes
-            System.out.println("merging");
-            writer.forceMerge(1);
-            writer.close();
-
-            System.out.println("done");
-            System.out.println("");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void indexSection(IndexWriter indexWriter, Bible.Section section) throws IOException {
-        Document doc = new Document();
-
-        doc.add(new TextField("book", section.bookName(), Field.Store.YES));
-
-        doc.add(new LongPoint("book_num", section.book())); // filtering
-        doc.add(new SortedSetDocValuesFacetField("book_num", Integer.toString(section.book())));
-//        doc.add(new NumericDocValuesField("book_num", section.book())); // sorting / faceting
-        doc.add(new StoredField("book_num", section.book())); // retrieval
-
-        doc.add(new LongPoint("chapter_num", section.chapter())); // filtering
-        doc.add(new NumericDocValuesField("chapter_num", section.chapter())); // sorting / faceting
-        doc.add(new StoredField("chapter_num", section.chapter())); // retrieval
-
-        section.verse().ifPresent(v ->{
-            doc.add(new LongPoint("verse_num", v)); // filtering
-            doc.add(new NumericDocValuesField("verse_num", v)); // sorting / faceting
-            doc.add(new StoredField("verse_num", v)); // retrieval
-        });
-
-        FieldType textWithTV = new FieldType(TextField.TYPE_STORED) {{
-            setStoreTermVectors(true);
-            freeze();
-        }};
-        doc.add(new Field("text", section.text(), textWithTV));
-
-//        System.out.println(
-//            "adding "+section.bookName()+
-//            ", chapter "+section.chapter()+
-//            section.verse().map(v -> ", verse "+v).orElse("")
-//        );
-
-        indexWriter.addDocument(facetsConfig.build(doc));
+    public Searcher(Analyzer analyzer, BaseDirectory dir) throws IOException {
+        this.analyzer = analyzer;
+        this.reader = DirectoryReader.open(dir);
     }
 
     public List<TopTerms.ScoredTerm> getScoredWords() {
         TopTerms tw = new TopTerms();
         try {
-            IndexReader reader = DirectoryReader.open(dir);
             Terms terms = MultiTerms.getTerms(reader, "text");
             if (terms == null) {
                 System.out.println("error no terms found!");
@@ -138,14 +54,14 @@ public class SectionIndex {
         return tw.getTerms();
     }
 
-    public QueryResult nullQuery() {
+    public SearchResult nullQuery() {
         // TODO replace with Bible#getVersesPerBook
         int[] versesCountPerBook = new int[]{
             1533, 1213, 859, 1288, 959, 658, 618, 85, 810, 695, 816, 719, 942, 822, 280, 406, 167, 1070, 2461, 915, 222, 117, 1292, 1364, 154, 1273, 357, 197, 73, 146, 21, 48, 105, 47, 56, 53, 38, 211, 55, 1071, 678, 1151, 879, 1007, 433, 437, 257, 149, 155, 104, 95, 89, 47, 113, 83, 46, 25, 303, 108, 105, 61, 105, 13, 14, 25, 404
         };
         System.out.println("returning global result for null query");
 
-        return new QueryResult(
+        return new SearchResult(
             0,
             0,
             List.of(),
@@ -154,15 +70,14 @@ public class SectionIndex {
         );
     }
 
-    public QueryResult query(String qStr) {
+    public SearchResult query(String qStr) {
         if (qStr == null || qStr == "") {
             return nullQuery();
         }
         long start = System.nanoTime();
-        List<QueryResult.Hit> hits = new ArrayList<>();
+        List<SearchResult.Hit> hits = new ArrayList<>();
         try {
-            IndexReader reader = DirectoryReader.open(dir);
-            IndexSearcher searcher = new IndexSearcher(reader);
+            IndexSearcher searcher = new IndexSearcher(this.reader);
             StoredFields storedFields = searcher.storedFields();
 
             StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
@@ -202,7 +117,7 @@ public class SectionIndex {
             for (int i = 0; i < scoreDocs.length; i++) {
                 Document doc = storedFields.document(scoreDocs[i].doc);
                 hits.add(
-                    new QueryResult.Hit(
+                    new SearchResult.Hit(
                         scoreDocs[i].score,
                         doc.get("book"),
                         Long.parseLong(doc.get("chapter_num")),
@@ -271,7 +186,7 @@ public class SectionIndex {
 
 
             long end = System.nanoTime();
-            QueryResult qr = new QueryResult(
+            SearchResult qr = new SearchResult(
                 ((end-start) / 1_000_000),
                 topDocs.totalHits.value(),
                 hits,
@@ -286,5 +201,4 @@ public class SectionIndex {
             throw new RuntimeException();
         }
     }
-
 }
