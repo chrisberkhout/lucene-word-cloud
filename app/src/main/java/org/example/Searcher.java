@@ -9,13 +9,15 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -126,59 +128,15 @@ public class Searcher {
                     )
                 );
             }
-//            System.out.println("");
 
             // unscored search to collect terms information from every match
-
-            class Freqs {
-                long total;
-                long docs;
-                Freqs(long total, long docs) {
-                    this.total = total;
-                    this.docs = docs;
-                }
-            }
-            Map<String,Freqs> freqs = new HashMap();
-
-            Collector collector = new SimpleCollector() {
-                private LeafReaderContext context;
-                private int docBase;
-
-                @Override
-                protected void doSetNextReader(LeafReaderContext context) throws IOException {
-                    this.context = context;
-                    this.docBase = context.docBase;
-                }
-
-                @Override
-                public void collect(int doc) throws IOException {
-                    int globalDocId = docBase + doc;
-                    Terms terms = reader.termVectors().get(globalDocId, "text");
-                    if (terms == null) {
-                        System.out.println("terms from term vectors null");
-                    } else {
-                        TermsEnum termsEnum = terms.iterator();
-                        BytesRef term;
-                        while ((term = termsEnum.next()) != null) {
-                            String termStr = term.utf8ToString();
-                            Freqs c = freqs.computeIfAbsent(termStr, k -> new Freqs(0,0));
-                            c.total += termsEnum.totalTermFreq();
-                            c.docs += 1;
-                        }
-                    }
-                }
-
-                @Override
-                public ScoreMode scoreMode() {
-                    return ScoreMode.COMPLETE_NO_SCORES;
-                }
-            };
+            TermFrequenciesCollector collector = new TermFrequenciesCollector(reader);
             searcher.search(q, collector);
 
             TopTerms tw = new TopTerms();
 
-            for (Map.Entry<String,Freqs> e : freqs.entrySet()) {
-                Freqs f = e.getValue();
+            for (Map.Entry<String,Frequencies> e : collector.getTermFrequencies().entrySet()) {
+                Frequencies f = e.getValue();
                 double idf = Math.log((topDocs.totalHits.value() + 1.0) / (f.docs + 1.0));
                 double tfidf = f.total * idf;
                 tw.maybeAddTerm(e.getKey(), tfidf);
