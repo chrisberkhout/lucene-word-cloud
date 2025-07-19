@@ -17,7 +17,9 @@ public class TopTerms {
         );
     }
 
-    void maybeAddTerm(String term, double tfidf) {
+    void maybeAddTerm(String term, double tf, double df, double numDocs) {
+        double idf = Math.log((numDocs + 1.0) / (df + 1.0));
+        double tfidf = tf * idf;
         this.topTerms.offer(new ScoredTerm(term, tfidf));
         if (this.topTerms.size() > this.limit) {
             this.topTerms.poll(); // removes the term with the lowest tfidf
