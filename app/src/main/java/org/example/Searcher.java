@@ -32,8 +32,8 @@ public class Searcher {
         this.reader = DirectoryReader.open(dir);
     }
 
-    public List<TopTerms.ScoredTerm> getScoredWords() throws IOException {
-        long numDocs = reader.numDocs();
+    public List<TopTerms.ScoredTerm> getGlobalTopTerms() throws IOException {
+        final long numDocs = reader.numDocs();
         TopTerms tw = new TopTerms();
 
         Terms terms = MultiTerms.getTerms(reader, "text");
@@ -52,26 +52,7 @@ public class Searcher {
         return tw.getTerms();
     }
 
-    public SearchResult nullQuery() throws IOException {
-        // TODO replace with Bible#getVersesPerBook
-        int[] versesCountPerBook = new int[]{
-            1533, 1213, 859, 1288, 959, 658, 618, 85, 810, 695, 816, 719, 942, 822, 280, 406, 167, 1070, 2461, 915, 222, 117, 1292, 1364, 154, 1273, 357, 197, 73, 146, 21, 48, 105, 47, 56, 53, 38, 211, 55, 1071, 678, 1151, 879, 1007, 433, 437, 257, 149, 155, 104, 95, 89, 47, 113, 83, 46, 25, 303, 108, 105, 61, 105, 13, 14, 25, 404
-        };
-        System.out.println("returning global result for null query");
-
-        return new SearchResult(
-            null,
-            null,
-            List.of(),
-            getScoredWords(),
-            versesCountPerBook
-        );
-    }
-
     public SearchResult query(String qStr) throws IOException {
-        if (qStr == null || qStr == "") {
-            return nullQuery();
-        }
         List<SearchResult.Hit> hits = new ArrayList<>();
 
         IndexSearcher searcher = new IndexSearcher(this.reader);

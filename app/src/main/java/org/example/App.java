@@ -21,7 +21,7 @@ public class App {
 
         Searcher searcher = new Searcher(analyzer, dir);
 
-        new Server(searcher).start();
+        new Server(searcher, bible.getVersesPerBook()).start();
     }
 
 }
