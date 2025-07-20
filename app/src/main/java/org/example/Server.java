@@ -24,9 +24,20 @@ public class Server {
     }
 
     void searchHandler(Context ctx) throws IOException {
+        long startTime = System.nanoTime();
+
         String q = ctx.queryParam("q");
         SearchResult qr = this.searcher.query(q);
-        ctx.json(qr);
+
+        long durationMillis = ((System.nanoTime()-startTime) / 1_000_000);
+
+        ctx.json(new SearchResult(
+            durationMillis,
+            qr.totalHits(),
+            qr.hits(),
+            qr.topTerms(),
+            qr.hitsByBook()
+        ));
     }
 
 }

@@ -60,8 +60,8 @@ public class Searcher {
         System.out.println("returning global result for null query");
 
         return new SearchResult(
-            0,
-            0,
+            null,
+            null,
             List.of(),
             getScoredWords(),
             versesCountPerBook
@@ -72,7 +72,6 @@ public class Searcher {
         if (qStr == null || qStr == "") {
             return nullQuery();
         }
-        long start = System.nanoTime();
         List<SearchResult.Hit> hits = new ArrayList<>();
 
         IndexSearcher searcher = new IndexSearcher(this.reader);
@@ -136,9 +135,8 @@ public class Searcher {
             tw.maybeAddTerm(e.getKey(), f.total, f.docs, totalHits);
         }
 
-        long end = System.nanoTime();
         SearchResult qr = new SearchResult(
-            ((end-start) / 1_000_000),
+            null,
             totalHits,
             hits,
             tw.getTerms(),

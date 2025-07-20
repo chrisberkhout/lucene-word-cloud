@@ -3,8 +3,8 @@ package org.example;
 import java.util.List;
 
 public record SearchResult(
-    long time,
-    long totalHits,
+    Long time,
+    Long totalHits,
     List<Hit> hits,
     List<TopTerms.ScoredTerm> topTerms,
     int[] hitsByBook
