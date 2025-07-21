@@ -50,7 +50,7 @@ public class Searcher {
         return tw.getTerms();
     }
 
-    public SearchResult query(String qStr) throws IOException {
+    public SearchResult search(String qStr) throws IOException {
         StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
 
         Query q;
@@ -60,8 +60,8 @@ public class Searcher {
             throw new RuntimeException(e);
         }
 
-        TopDocsAndCounts topDocsAndCounts = queryTopDocsAndCounts(q);
-        List<TopTerms.ScoredTerm> topTerms = queryTopTerms(q);
+        TopDocsAndCounts topDocsAndCounts = searchTopDocsAndCounts(q);
+        List<TopTerms.ScoredTerm> topTerms = searchTopTerms(q);
 
         SearchResult qr = new SearchResult(
             null,
@@ -74,7 +74,7 @@ public class Searcher {
         return qr;
     }
 
-    private TopDocsAndCounts queryTopDocsAndCounts(Query q) throws IOException {
+    private TopDocsAndCounts searchTopDocsAndCounts(Query q) throws IOException {
         // scored top N search and facet counts
         IndexSearcher searcher = new IndexSearcher(this.reader);
         FacetsCollectorManager fcm = new FacetsCollectorManager();
@@ -114,7 +114,7 @@ public class Searcher {
 
     private record TopDocsAndCounts(List<SearchResult.Hit> topDocs, long totalHits, int[] hitsByBook) {}
 
-    private List<TopTerms.ScoredTerm> queryTopTerms(Query q) throws IOException {
+    private List<TopTerms.ScoredTerm> searchTopTerms(Query q) throws IOException {
         // unscored search to collect terms information from every match
         IndexSearcher searcher = new IndexSearcher(this.reader);
 

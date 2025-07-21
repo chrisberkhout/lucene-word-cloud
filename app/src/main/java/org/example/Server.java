@@ -40,7 +40,7 @@ public class Server {
                 versesPerBook
             );
         } else {
-            qr = this.searcher.query(q);
+            qr = this.searcher.search(q);
         }
 
         long durationMillis = ((System.nanoTime()-startTime) / 1_000_000);
