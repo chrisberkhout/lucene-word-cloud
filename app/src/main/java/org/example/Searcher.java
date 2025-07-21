@@ -27,7 +27,7 @@ public class Searcher {
     private IndexReader reader;
     private FacetsConfig facetsConfig = new FacetsConfig();
 
-    public Searcher(Analyzer analyzer, BaseDirectory dir) throws IOException {
+    Searcher(Analyzer analyzer, BaseDirectory dir) throws IOException {
         this.analyzer = analyzer;
         this.reader = DirectoryReader.open(dir);
     }
@@ -51,39 +51,36 @@ public class Searcher {
     }
 
     public SearchResult query(String qStr) throws IOException {
-        IndexSearcher searcher = new IndexSearcher(this.reader);
         StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
 
         Query q;
         try {
             q = sqp.parse(qStr, "text");
         } catch (QueryNodeException e) {
-            throw new RuntimeException("Query node exception during query parsing: "+e);
+            throw new RuntimeException(e);
         }
 
-        // scored top N search
+        TopDocsAndCounts topDocsAndCounts = queryTopDocsAndCounts(q);
+        List<TopTerms.ScoredTerm> topTerms = queryTopTerms(q);
+
+        SearchResult qr = new SearchResult(
+            null,
+            topDocsAndCounts.totalHits(),
+            topDocsAndCounts.topDocs(),
+            topTerms,
+            topDocsAndCounts.hitsByBook()
+        );
+
+        return qr;
+    }
+
+    private TopDocsAndCounts queryTopDocsAndCounts(Query q) throws IOException {
+        // scored top N search and facet counts
+        IndexSearcher searcher = new IndexSearcher(this.reader);
         FacetsCollectorManager fcm = new FacetsCollectorManager();
         FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 100, fcm);
         TopDocs topDocs = fr.topDocs();
 
-        FacetsCollector fc = fr.facetsCollector();
-        SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
-        Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
-        FacetResult facetResult = facets.getAllChildren("book_num");
-
-        System.out.println("Facet counts for 'book_num':");
-        int[] hitsByBook = new int[66];
-        if (facetResult != null) {
-            for (LabelAndValue lv : facetResult.labelValues) {
-                System.out.println("  " + lv.label + " (" + lv.value + ")");
-                hitsByBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
-            }
-        } else {
-            System.out.println("(none)");
-        }
-
-//        System.out.println("totalHits: "+topDocs.totalHits.value());
-//        System.out.println("");
         ScoreDoc[] scoreDocs = topDocs.scoreDocs;
         StoredFields storedFields = searcher.storedFields();
         List<SearchResult.Hit> hits = new ArrayList<>();
@@ -100,20 +97,22 @@ public class Searcher {
             );
         }
 
-        long totalHits = topDocs.totalHits.value();
+        FacetsCollector fc = fr.facetsCollector();
+        SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
+        Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
+        FacetResult facetResult = facets.getAllChildren("book_num");
+        int[] hitsByBook = new int[66];
+        if (facetResult != null) {
+            for (LabelAndValue lv : facetResult.labelValues) {
+                System.out.println("  " + lv.label + " (" + lv.value + ")");
+                hitsByBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
+            }
+        }
 
-        List<TopTerms.ScoredTerm> topTerms = queryTopTerms(q);
-
-        SearchResult qr = new SearchResult(
-            null,
-            totalHits,
-            hits,
-            topTerms,
-            hitsByBook
-        );
-
-        return qr;
+        return new TopDocsAndCounts(hits, topDocs.totalHits.value(), hitsByBook);
     }
+
+    private record TopDocsAndCounts(List<SearchResult.Hit> topDocs, long totalHits, int[] hitsByBook) {}
 
     private List<TopTerms.ScoredTerm> queryTopTerms(Query q) throws IOException {
         // unscored search to collect terms information from every match
