@@ -32,14 +32,12 @@ public class Searcher {
         this.reader = DirectoryReader.open(dir);
     }
 
-    public List<TopTerms.ScoredTerm> getGlobalTopTerms() throws IOException {
+    public List<TopTerms.ScoredTerm> globalTopTerms() throws IOException {
         final long numDocs = reader.numDocs();
         TopTerms tw = new TopTerms();
 
         Terms terms = MultiTerms.getTerms(reader, "text");
-        if (terms == null) {
-            System.out.println("error no terms found!");
-        } else {
+        if (terms != null) {
             TermsEnum termsEnum = terms.iterator();
             BytesRef term;
             while ((term = termsEnum.next()) != null) {
@@ -53,22 +51,17 @@ public class Searcher {
     }
 
     public SearchResult query(String qStr) throws IOException {
-        List<SearchResult.Hit> hits = new ArrayList<>();
-
         IndexSearcher searcher = new IndexSearcher(this.reader);
-        StoredFields storedFields = searcher.storedFields();
-
         StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
+
         Query q;
         try {
             q = sqp.parse(qStr, "text");
         } catch (QueryNodeException e) {
-            System.out.println("query node exception during query parsing: "+e);
-            throw new RuntimeException(e);
+            throw new RuntimeException("Query node exception during query parsing: "+e);
         }
 
         // scored top N search
-
         FacetsCollectorManager fcm = new FacetsCollectorManager();
         FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 100, fcm);
         TopDocs topDocs = fr.topDocs();
@@ -89,9 +82,11 @@ public class Searcher {
             System.out.println("(none)");
         }
 
+//        System.out.println("totalHits: "+topDocs.totalHits.value());
+//        System.out.println("");
         ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-        System.out.println("totalHits: "+topDocs.totalHits.value());
-        System.out.println("");
+        StoredFields storedFields = searcher.storedFields();
+        List<SearchResult.Hit> hits = new ArrayList<>();
         for (int i = 0; i < scoreDocs.length; i++) {
             Document doc = storedFields.document(scoreDocs[i].doc);
             hits.add(
@@ -105,25 +100,35 @@ public class Searcher {
             );
         }
 
+        long totalHits = topDocs.totalHits.value();
+
+        List<TopTerms.ScoredTerm> topTerms = queryTopTerms(q, totalHits);
+
+        SearchResult qr = new SearchResult(
+            null,
+            totalHits,
+            hits,
+            topTerms,
+            hitsByBook
+        );
+
+        return qr;
+    }
+
+    private List<TopTerms.ScoredTerm> queryTopTerms(Query q, long totalHits) throws IOException {
         // unscored search to collect terms information from every match
+        IndexSearcher searcher = new IndexSearcher(this.reader);
+
         TermFrequenciesCollector collector = new TermFrequenciesCollector(reader);
         searcher.search(q, collector);
 
-        long totalHits = topDocs.totalHits.value();
         TopTerms tw = new TopTerms();
         for (Map.Entry<String,Frequencies> e : collector.getTermFrequencies().entrySet()) {
             Frequencies f = e.getValue();
             tw.maybeAddTerm(e.getKey(), f.total, f.docs, totalHits);
         }
 
-        SearchResult qr = new SearchResult(
-            null,
-            totalHits,
-            hits,
-            tw.getTerms(),
-            hitsByBook
-        );
-
-        return qr;
+        return tw.getTerms();
     }
+
 }

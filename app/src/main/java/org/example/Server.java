@@ -36,7 +36,7 @@ public class Server {
                 null,
                 null,
                 null,
-                this.searcher.getGlobalTopTerms(),
+                this.searcher.globalTopTerms(),
                 versesPerBook
             );
         } else {
