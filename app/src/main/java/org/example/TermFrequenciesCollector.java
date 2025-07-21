@@ -17,13 +17,18 @@ class TermFrequenciesCollector extends SimpleCollector {
     private final Map<String,Frequencies> termFrequencies = new HashMap();
     private final IndexReader reader;
     private int docBase;
+    private int totalHits = 0;
 
     TermFrequenciesCollector(IndexReader reader) {
         this.reader = reader;
     }
 
     public Map<String,Frequencies> getTermFrequencies() {
-        return termFrequencies;
+        return this.termFrequencies;
+    }
+
+    public int getTotalHits() {
+        return this.totalHits;
     }
 
     @Override
@@ -33,6 +38,7 @@ class TermFrequenciesCollector extends SimpleCollector {
 
     @Override
     public void collect(int doc) throws IOException {
+        this.totalHits++;
         int globalDocId = docBase + doc;
         Terms terms = reader.termVectors().get(globalDocId, "text");
         if (terms == null) {

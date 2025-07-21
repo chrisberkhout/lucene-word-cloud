@@ -17,7 +17,7 @@ public class TopTerms {
         );
     }
 
-    void maybeAddTerm(String term, double tf, double df, double numDocs) {
+    void maybeAddTerm(String term, double tf, double df, int numDocs) {
         double idf = Math.log((numDocs + 1.0) / (df + 1.0));
         double tfidf = tf * idf;
         this.topTerms.offer(new ScoredTerm(term, tfidf));

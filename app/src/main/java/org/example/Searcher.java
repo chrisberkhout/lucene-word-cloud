@@ -33,7 +33,7 @@ public class Searcher {
     }
 
     public List<TopTerms.ScoredTerm> globalTopTerms() throws IOException {
-        final long numDocs = reader.numDocs();
+        final int numDocs = reader.numDocs();
         TopTerms tw = new TopTerms();
 
         Terms terms = MultiTerms.getTerms(reader, "text");
@@ -102,7 +102,7 @@ public class Searcher {
 
         long totalHits = topDocs.totalHits.value();
 
-        List<TopTerms.ScoredTerm> topTerms = queryTopTerms(q, totalHits);
+        List<TopTerms.ScoredTerm> topTerms = queryTopTerms(q);
 
         SearchResult qr = new SearchResult(
             null,
@@ -115,13 +115,14 @@ public class Searcher {
         return qr;
     }
 
-    private List<TopTerms.ScoredTerm> queryTopTerms(Query q, long totalHits) throws IOException {
+    private List<TopTerms.ScoredTerm> queryTopTerms(Query q) throws IOException {
         // unscored search to collect terms information from every match
         IndexSearcher searcher = new IndexSearcher(this.reader);
 
         TermFrequenciesCollector collector = new TermFrequenciesCollector(reader);
         searcher.search(q, collector);
 
+        int totalHits = collector.getTotalHits();
         TopTerms tw = new TopTerms();
         for (Map.Entry<String,Frequencies> e : collector.getTermFrequencies().entrySet()) {
             Frequencies f = e.getValue();
