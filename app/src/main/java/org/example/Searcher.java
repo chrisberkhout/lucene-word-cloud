@@ -32,9 +32,9 @@ public class Searcher {
         this.reader = DirectoryReader.open(dir);
     }
 
-    public List<TopTerms.ScoredTerm> globalTopTerms() throws IOException {
+    public List<TopTerms.ScoredTerm> globalTopTerms(int n) throws IOException {
         final int numDocs = reader.numDocs();
-        TopTerms tw = new TopTerms();
+        TopTerms tw = new TopTerms(n);
 
         Terms terms = MultiTerms.getTerms(reader, "text");
         if (terms != null) {
@@ -50,7 +50,7 @@ public class Searcher {
         return tw.getTerms();
     }
 
-    public Result search(String qStr) throws IOException {
+    public Result search(String qStr, int topDocsNumber, int topTermsNumber) throws IOException {
         StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
 
         Query q;
@@ -60,8 +60,8 @@ public class Searcher {
             throw new RuntimeException(e);
         }
 
-        TopDocsAndCounts topDocsAndCounts = searchTopDocsAndCounts(q);
-        List<TopTerms.ScoredTerm> topTerms = searchTopTerms(q);
+        TopDocsAndCounts topDocsAndCounts = searchTopDocsAndCounts(q, topDocsNumber);
+        List<TopTerms.ScoredTerm> topTerms = searchTopTerms(q, topTermsNumber);
 
         Result qr = new Result(
             topDocsAndCounts.totalHits(),
@@ -88,10 +88,10 @@ public class Searcher {
         String text
     ) {}
 
-    private TopDocsAndCounts searchTopDocsAndCounts(Query q) throws IOException {
+    private TopDocsAndCounts searchTopDocsAndCounts(Query q, int n) throws IOException {
         IndexSearcher searcher = new IndexSearcher(this.reader);
         FacetsCollectorManager fcm = new FacetsCollectorManager();
-        FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 100, fcm);
+        FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, n, fcm);
         TopDocs topDocs = fr.topDocs();
 
         ScoreDoc[] scoreDocs = topDocs.scoreDocs;
@@ -133,14 +133,14 @@ public class Searcher {
      * It's a separate search for simplicity. It could be combined in a MultiCollector with the unscored facet counts
      * collection, but not with the scored top docs search.
      */
-    private List<TopTerms.ScoredTerm> searchTopTerms(Query q) throws IOException {
+    private List<TopTerms.ScoredTerm> searchTopTerms(Query q, int n) throws IOException {
         IndexSearcher searcher = new IndexSearcher(this.reader);
 
         TermFrequenciesCollector collector = new TermFrequenciesCollector(reader);
         searcher.search(q, collector);
 
         int totalHits = collector.getTotalHits();
-        TopTerms tw = new TopTerms();
+        TopTerms tw = new TopTerms(n);
         for (Map.Entry<String,TermFrequenciesCollector.Frequencies> e : collector.getTermFrequencies().entrySet()) {
             TermFrequenciesCollector.Frequencies f = e.getValue();
             tw.maybeAddTerm(e.getKey(), f.total, f.docs, totalHits);
@@ -150,4 +150,3 @@ public class Searcher {
     }
 
 }
-

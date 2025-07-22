@@ -13,6 +13,9 @@ public class Server {
     int[] versesPerBook;
 
     private static final int port = 7070;
+    private static final int topDocsNumber = 100;
+    private static final int topTermsNumber = 200;
+
 
     Server(Searcher searcher, int[] versesPerBook) {
         this.searcher = searcher;
@@ -34,9 +37,14 @@ public class Server {
 
         if (q == null || q == "") {
             // Global top terms and per book counts for initial page load
-            sr = new Searcher.Result(null, null, this.searcher.globalTopTerms(), versesPerBook);
+            sr = new Searcher.Result(
+                null,
+                null,
+                this.searcher.globalTopTerms(topTermsNumber),
+                versesPerBook
+            );
         } else {
-            sr = this.searcher.search(q);
+            sr = this.searcher.search(q, topDocsNumber, topTermsNumber);
         }
 
         long durationMillis = ((System.nanoTime()-startTime) / 1_000_000);

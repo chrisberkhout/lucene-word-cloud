@@ -7,11 +7,12 @@ import java.util.PriorityQueue;
 public class TopTerms {
 
     public record ScoredTerm(String term, double score) {}
-    public static int limit = 200;
+    private int limit;
 
     PriorityQueue<ScoredTerm> topTerms;
 
-    public TopTerms() {
+    public TopTerms(int n) {
+        this.limit = n;
         this.topTerms = new PriorityQueue<ScoredTerm>(
             Comparator.comparingDouble(sw -> sw.score)
         );
