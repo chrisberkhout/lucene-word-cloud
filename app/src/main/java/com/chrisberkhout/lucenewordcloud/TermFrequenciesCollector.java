@@ -41,9 +41,7 @@ class TermFrequenciesCollector extends SimpleCollector {
         this.totalHits++;
         int globalDocId = docBase + doc;
         Terms terms = reader.termVectors().get(globalDocId, "text");
-        if (terms == null) {
-            throw new RuntimeException("Term vectors not present");
-        } else {
+        if (terms != null) {
             TermsEnum termsEnum = terms.iterator();
             BytesRef term;
             while ((term = termsEnum.next()) != null) {
