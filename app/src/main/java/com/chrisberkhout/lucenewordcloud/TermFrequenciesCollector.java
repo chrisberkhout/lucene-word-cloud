@@ -24,21 +24,21 @@ class TermFrequenciesCollector extends SimpleCollector {
     }
 
     public Map<String, Frequencies> getTermFrequencies() {
-        return this.termFrequencies;
+        return termFrequencies;
     }
 
     public int getTotalHits() {
-        return this.totalHits;
+        return totalHits;
     }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) {
-        this.docBase = context.docBase;
+        docBase = context.docBase;
     }
 
     @Override
     public void collect(int doc) throws IOException {
-        this.totalHits++;
+        totalHits++;
         int globalDocId = docBase + doc;
         Terms terms = reader.termVectors().get(globalDocId, "text");
         if (terms != null) {

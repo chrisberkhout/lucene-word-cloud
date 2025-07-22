@@ -28,7 +28,7 @@ public class IndexBuilder {
     }
 
     public void build(Bible bible) throws IOException {
-        IndexWriterConfig iwc = new IndexWriterConfig(this.analyzer);
+        IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
         // Overwrite any existing index
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);

@@ -31,7 +31,7 @@ public class Searcher {
 
     Searcher(Analyzer analyzer, BaseDirectory dir) throws IOException {
         this.analyzer = analyzer;
-        this.reader = DirectoryReader.open(dir);
+        reader = DirectoryReader.open(dir);
     }
 
     public List<TopTerms.ScoredTerm> globalTopTerms(int n) throws IOException {
@@ -53,7 +53,7 @@ public class Searcher {
     }
 
     public Result search(String qStr, int topDocsNumber, int topTermsNumber) throws IOException, QueryNodeException {
-        StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
+        StandardQueryParser sqp = new StandardQueryParser(analyzer);
 
         Query q = sqp.parse(qStr, "text");
 
@@ -69,7 +69,7 @@ public class Searcher {
     }
 
     private TopDocsAndCounts searchTopDocsAndCounts(Query q, int n) throws IOException {
-        IndexSearcher searcher = new IndexSearcher(this.reader);
+        IndexSearcher searcher = new IndexSearcher(reader);
         FacetsCollectorManager fcm = new FacetsCollectorManager();
         FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, n, fcm);
         TopDocs topDocs = fr.topDocs();
@@ -111,7 +111,7 @@ public class Searcher {
      * collection, but not with the scored top docs search.
      */
     private List<TopTerms.ScoredTerm> searchTopTerms(Query q, int n) throws IOException {
-        IndexSearcher searcher = new IndexSearcher(this.reader);
+        IndexSearcher searcher = new IndexSearcher(reader);
 
         TermFrequenciesCollector collector = new TermFrequenciesCollector(reader);
         searcher.search(q, collector);

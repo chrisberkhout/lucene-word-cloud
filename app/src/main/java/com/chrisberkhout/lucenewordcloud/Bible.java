@@ -50,20 +50,20 @@ public class Bible {
                     String[] parts = line.split(" ", 3);
                     book = Integer.parseInt(parts[1]);
                     bookName = parts[2];
-                    this.bookNamesById.put(book, bookName);
+                    bookNamesById.put(book, bookName);
                 } else if (line.startsWith(" ")) {
                     // Continuation of a verse, e.g. "        the light from the darkness."
-                    int lastIndex = this.verses.size() - 1;
-                    Verse v = this.verses.get(lastIndex);
+                    int lastIndex = verses.size() - 1;
+                    Verse v = verses.get(lastIndex);
                     String text = String.join(" ", v.text, line.substring(8));
-                    this.verses.set(lastIndex, new Verse(v.bookName, v.book, v.chapter, v.verse, text));
+                    verses.set(lastIndex, new Verse(v.bookName, v.book, v.chapter, v.verse, text));
                 } else {
                     // Start of a verse, e.g. "001:002 Now the earth was formless and empty.  Darkness was on the surface"
                     chapter = Integer.parseInt(line.substring(0, 3));
                     verse = Integer.parseInt(line.substring(4, 7));
                     String text = line.substring(8);
-                    this.verses.add(new Verse(bookName, book, chapter, verse, text));
-                    this.versesPerBook[book-1]++;
+                    verses.add(new Verse(bookName, book, chapter, verse, text));
+                    versesPerBook[book-1]++;
                 }
                 line = reader.readLine();
             }

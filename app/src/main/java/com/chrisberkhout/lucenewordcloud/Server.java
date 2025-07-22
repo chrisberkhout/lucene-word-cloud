@@ -20,13 +20,13 @@ public class Server {
     Server(Searcher searcher, long[] versesPerBook) {
         this.searcher = searcher;
         this.versesPerBook = versesPerBook;
-        this.api = Javalin.create(config -> {
+        api = Javalin.create(config -> {
             config.staticFiles.add("/public");
         }).get("/search", this::searchHandler);
     }
 
     void start() {
-        this.api.start(port);
+        api.start(port);
     }
 
     void searchHandler(Context ctx) throws IOException, QueryNodeException {
@@ -40,11 +40,11 @@ public class Server {
             sr = new Searcher.Result(
                 null,
                 null,
-                this.searcher.globalTopTerms(topTermsNumber),
+                searcher.globalTopTerms(topTermsNumber),
                 versesPerBook
             );
         } else {
-            sr = this.searcher.search(q, topDocsNumber, topTermsNumber);
+            sr = searcher.search(q, topDocsNumber, topTermsNumber);
         }
 
         long durationMillis = ((System.nanoTime()-startTime) / 1_000_000);

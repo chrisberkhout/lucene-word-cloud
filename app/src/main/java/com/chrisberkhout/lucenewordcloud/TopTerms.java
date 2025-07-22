@@ -14,24 +14,23 @@ public class TopTerms {
     }
 
     private final int limit;
-    private final PriorityQueue<ScoredTerm> topTerms;
+    private final PriorityQueue<ScoredTerm> topTerms = new PriorityQueue<>();
 
     TopTerms(int n) {
-        this.limit = n;
-        this.topTerms = new PriorityQueue<>();
+        limit = n;
     }
 
     public void offerTerm(String term, double tf, double df, int numDocs) {
         double idf = Math.log((numDocs + 1.0) / (df + 1.0));
         double tfidf = tf * idf;
-        this.topTerms.offer(new ScoredTerm(term, tfidf));
-        if (this.topTerms.size() > this.limit) {
-            this.topTerms.poll(); // removes the term with the lowest tfidf
+        topTerms.offer(new ScoredTerm(term, tfidf));
+        if (topTerms.size() > limit) {
+            topTerms.poll(); // removes the term with the lowest tfidf
         }
     }
 
     public List<ScoredTerm> getTerms() {
-        return this.topTerms.stream().sorted(Comparator.comparingDouble(ScoredTerm::score).reversed()).toList();
+        return topTerms.stream().sorted(Comparator.comparingDouble(ScoredTerm::score).reversed()).toList();
     }
 
 }
