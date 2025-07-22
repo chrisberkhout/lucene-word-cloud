@@ -114,8 +114,13 @@ public class Searcher {
 
     private record TopDocsAndCounts(List<SearchResult.Hit> topDocs, long totalHits, int[] hitsByBook) {}
 
+    /*
+     * Perform an unscored search to collect terms information from every hit.
+     *
+     * It's a separate search for simplicity. It could be combined in a MultiCollector with the unscored facet counts
+     * collection, but not with the scored top docs search.
+     */
     private List<TopTerms.ScoredTerm> searchTopTerms(Query q) throws IOException {
-        // unscored search to collect terms information from every match
         IndexSearcher searcher = new IndexSearcher(this.reader);
 
         TermFrequenciesCollector collector = new TermFrequenciesCollector(reader);
