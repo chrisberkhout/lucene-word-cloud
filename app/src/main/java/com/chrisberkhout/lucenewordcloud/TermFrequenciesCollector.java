@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 class TermFrequenciesCollector extends SimpleCollector {
-    private final Map<String,Frequencies> termFrequencies = new HashMap();
+    private final Map<String, Frequencies> termFrequencies = new HashMap<>();
     private final IndexReader reader;
     private int docBase;
     private int totalHits = 0;
@@ -23,7 +23,7 @@ class TermFrequenciesCollector extends SimpleCollector {
         this.reader = reader;
     }
 
-    public Map<String,Frequencies> getTermFrequencies() {
+    public Map<String, Frequencies> getTermFrequencies() {
         return this.termFrequencies;
     }
 
@@ -58,7 +58,7 @@ class TermFrequenciesCollector extends SimpleCollector {
         return ScoreMode.COMPLETE_NO_SCORES;
     }
 
-    class Frequencies {
+    static class Frequencies {
         long total;
         long docs;
         Frequencies(long total, long docs) {
@@ -66,4 +66,4 @@ class TermFrequenciesCollector extends SimpleCollector {
             this.docs = docs;
         }
     }
-};
+}

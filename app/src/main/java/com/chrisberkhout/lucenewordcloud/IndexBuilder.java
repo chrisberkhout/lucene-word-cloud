@@ -12,9 +12,15 @@ import java.io.IOException;
 
 public class IndexBuilder {
 
-    private BaseDirectory dir;
-    private Analyzer analyzer;
-    private FacetsConfig facetsConfig = new FacetsConfig();
+    private static final FieldType TEXT_WITH_TERM_VECTORS = new FieldType(TextField.TYPE_STORED);
+    static {
+        TEXT_WITH_TERM_VECTORS.setStoreTermVectors(true);
+        TEXT_WITH_TERM_VECTORS.freeze();
+    }
+
+    private final BaseDirectory dir;
+    private final Analyzer analyzer;
+    private final FacetsConfig facetsConfig = new FacetsConfig();
 
     public IndexBuilder(Analyzer analyzer, BaseDirectory dir) {
         this.analyzer = analyzer;
@@ -29,14 +35,14 @@ public class IndexBuilder {
         // Keep various files separate, for easier inspection
         iwc.setUseCompoundFile(false);
 
-        IndexWriter writer = new IndexWriter(dir, iwc);
-        for (Bible.Verse verse : bible.getVerses()) {
-            indexVerse(writer, verse);
-        }
+        try (IndexWriter writer = new IndexWriter(dir, iwc)) {
+            for (Bible.Verse verse : bible.getVerses()) {
+                indexVerse(writer, verse);
+            }
 
-        // It's a static index
-        writer.forceMerge(1);
-        writer.close();
+            // It's a static index
+            writer.forceMerge(1);
+        }
     }
 
     private void indexVerse(IndexWriter indexWriter, Bible.Verse verse) throws IOException {
@@ -47,12 +53,7 @@ public class IndexBuilder {
         doc.add(new StoredField("book_num", verse.book()));
         doc.add(new StoredField("chapter_num", verse.chapter()));
         doc.add(new StoredField("verse_num", verse.verse()));
-
-        FieldType textWithTV = new FieldType(TextField.TYPE_STORED) {{
-            setStoreTermVectors(true);
-            freeze();
-        }};
-        doc.add(new Field("text", verse.text(), textWithTV));
+        doc.add(new Field("text", verse.text(), TEXT_WITH_TERM_VECTORS));
 
         indexWriter.addDocument(facetsConfig.build(doc));
     }

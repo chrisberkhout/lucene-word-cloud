@@ -2,19 +2,20 @@ package com.chrisberkhout.lucenewordcloud;
 
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 
 import java.io.IOException;
 import java.util.List;
 
 public class Server {
 
-    Searcher searcher;
-    Javalin api;
-    long[] versesPerBook;
-
     private static final int port = 7070;
     private static final int topDocsNumber = 100;
     private static final int topTermsNumber = 200;
+
+    private Searcher searcher;
+    private Javalin api;
+    private long[] versesPerBook;
 
     Server(Searcher searcher, long[] versesPerBook) {
         this.searcher = searcher;
@@ -28,13 +29,13 @@ public class Server {
         this.api.start(port);
     }
 
-    void searchHandler(Context ctx) throws IOException {
+    void searchHandler(Context ctx) throws IOException, QueryNodeException {
         long startTime = System.nanoTime();
 
         String q = ctx.queryParam("q");
         Searcher.Result sr;
 
-        if (q == null || q == "") {
+        if (q == null || q.isBlank()) {
             // Global top terms and per book counts for initial page load
             sr = new Searcher.Result(
                 null,

@@ -16,12 +16,13 @@ public class App {
             bible.load();
 
             Analyzer analyzer = AnalyzerBuilder.build();
-            try (FSDirectory dir = FSDirectory.open(Paths.get(INDEX_PATH))) {
-                new IndexBuilder(analyzer, dir).build(bible);
-                Searcher searcher = new Searcher(analyzer, dir);
+            FSDirectory dir = FSDirectory.open(Paths.get(INDEX_PATH));
 
-                new Server(searcher, bible.getVersesPerBook()).start();
-            }
+            new IndexBuilder(analyzer, dir).build(bible);
+
+            Searcher searcher = new Searcher(analyzer, dir);
+
+            new Server(searcher, bible.getVersesPerBook()).start();
         } catch (IOException e) {
             System.err.println("An I/O error occurred: " + e.getMessage());
             e.printStackTrace();

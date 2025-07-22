@@ -23,9 +23,11 @@ import java.util.Map;
 
 public class Searcher {
 
-    private Analyzer analyzer;
-    private IndexReader reader;
-    private FacetsConfig facetsConfig = new FacetsConfig();
+    private static final int NUM_BOOKS = 66;
+
+    private final Analyzer analyzer;
+    private final IndexReader reader;
+    private final FacetsConfig facetsConfig = new FacetsConfig();
 
     Searcher(Analyzer analyzer, BaseDirectory dir) throws IOException {
         this.analyzer = analyzer;
@@ -34,7 +36,7 @@ public class Searcher {
 
     public List<TopTerms.ScoredTerm> globalTopTerms(int n) throws IOException {
         final int numDocs = reader.numDocs();
-        TopTerms tw = new TopTerms(n);
+        TopTerms tt = new TopTerms(n);
 
         Terms terms = MultiTerms.getTerms(reader, "text");
         if (terms != null) {
@@ -44,49 +46,27 @@ public class Searcher {
                 String termStr = term.utf8ToString();
                 long tf = termsEnum.totalTermFreq();
                 long df = termsEnum.docFreq();
-                tw.maybeAddTerm(termStr, tf, df, numDocs);
+                tt.offerTerm(termStr, tf, df, numDocs);
             }
         }
-        return tw.getTerms();
+        return tt.getTerms();
     }
 
-    public Result search(String qStr, int topDocsNumber, int topTermsNumber) throws IOException {
+    public Result search(String qStr, int topDocsNumber, int topTermsNumber) throws IOException, QueryNodeException {
         StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
 
-        Query q;
-        try {
-            q = sqp.parse(qStr, "text");
-        } catch (QueryNodeException e) {
-            throw new RuntimeException(e);
-        }
+        Query q = sqp.parse(qStr, "text");
 
         TopDocsAndCounts topDocsAndCounts = searchTopDocsAndCounts(q, topDocsNumber);
         List<TopTerms.ScoredTerm> topTerms = searchTopTerms(q, topTermsNumber);
 
-        Result qr = new Result(
+        return new Result(
             topDocsAndCounts.totalHits(),
             topDocsAndCounts.topDocs(),
             topTerms,
             topDocsAndCounts.hitsPerBook()
         );
-
-        return qr;
     }
-
-    record Result(
-        Long totalHits,
-        List<Hit> hits,
-        List<TopTerms.ScoredTerm> topTerms,
-        long[] hitsPerBook
-    ) {}
-
-    public record Hit(
-        double score,
-        String book,
-        long chapter,
-        long verse,
-        String text
-    ) {}
 
     private TopDocsAndCounts searchTopDocsAndCounts(Query q, int n) throws IOException {
         IndexSearcher searcher = new IndexSearcher(this.reader);
@@ -114,7 +94,7 @@ public class Searcher {
         SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
         Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
         FacetResult facetResult = facets.getAllChildren("book_num");
-        long[] hitsPerBook = new long[66];
+        long[] hitsPerBook = new long[NUM_BOOKS];
         if (facetResult != null) {
             for (LabelAndValue lv : facetResult.labelValues) {
                 hitsPerBook[Integer.parseInt(lv.label)-1] = lv.value.longValue();
@@ -123,8 +103,6 @@ public class Searcher {
 
         return new TopDocsAndCounts(hits, topDocs.totalHits.value(), hitsPerBook);
     }
-
-    private record TopDocsAndCounts(List<Hit> topDocs, long totalHits, long[] hitsPerBook) {}
 
     /*
      * An unscored search to collect terms information from every hit.
@@ -139,13 +117,30 @@ public class Searcher {
         searcher.search(q, collector);
 
         int totalHits = collector.getTotalHits();
-        TopTerms tw = new TopTerms(n);
+        TopTerms tt = new TopTerms(n);
         for (Map.Entry<String,TermFrequenciesCollector.Frequencies> e : collector.getTermFrequencies().entrySet()) {
             TermFrequenciesCollector.Frequencies f = e.getValue();
-            tw.maybeAddTerm(e.getKey(), f.total, f.docs, totalHits);
+            tt.offerTerm(e.getKey(), f.total, f.docs, totalHits);
         }
 
-        return tw.getTerms();
+        return tt.getTerms();
     }
+
+    record Hit(
+        double score,
+        String book,
+        long chapter,
+        long verse,
+        String text
+    ) {}
+
+    record Result(
+        Long totalHits,
+        List<Hit> hits,
+        List<TopTerms.ScoredTerm> topTerms,
+        long[] hitsPerBook
+    ) {}
+
+    private record TopDocsAndCounts(List<Hit> topDocs, long totalHits, long[] hitsPerBook) {}
 
 }
