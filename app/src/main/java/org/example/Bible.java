@@ -22,61 +22,57 @@ public class Bible {
         return versesPerBook;
     }
 
-    public void load() {
-        try (
-                BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    Objects.requireNonNull(Bible.class.getClassLoader().getResourceAsStream("pg8294.txt")),
-                    StandardCharsets.UTF_8
-                ))
-        ) {
-            String line;
-            String bookName = null;
-            int book = 0;
-            int chapter = 0;
-            int verse = 0;
+    public void load() throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+            Objects.requireNonNull(Bible.class.getClassLoader().getResourceAsStream("pg8294.txt")),
+            StandardCharsets.UTF_8
+        ));
 
-            while ((line = reader.readLine()) != null) {
-                // advance to the content
-                if (line.startsWith("Book ")) break;
-            }
+        String line;
+        String bookName = null;
+        int book = 0;
+        int chapter = 0;
+        int verse = 0;
 
-            while (line != null) {
-                if (line.length() == 0) {
-                    // end of content
-                    break;
-                } else if (line.startsWith("Book ")) {
-                    // start of a book
-                    String[] parts = line.split(" ", 3);
-                    book = Integer.parseInt(parts[1]);
-                    bookName = parts[2];
-                    this.bookNames.put(book, bookName);
-                } else if (line.startsWith(" ")) {
-                    // continuation of a verse
-                    Verse v = this.verses.removeLast();
-                    String text = String.join(" ", v.text, line.substring(8));
-                    this.verses.add(new Verse(v.bookName, v.book, v.chapter, v.verse, text));
-                } else {
-                    // start of a verse
-                    chapter = Integer.parseInt(line.substring(0, 3));
-                    verse = Integer.parseInt(line.substring(4, 7));
-                    String text = line.substring(8);
-                    this.verses.add(new Verse(bookName, book, chapter, verse, text));
-                    this.versesPerBook[book-1]++;
-                }
-                line = reader.readLine();
-            }
+        while ((line = reader.readLine()) != null) {
+            // advance to the content
+            if (line.startsWith("Book ")) break;
+        }
 
-            for (int i = 0; i < verses.size(); i++) {
-                Verse v = verses.get(i);
-                // strip notes
-                if (v.text.contains("{")) {
-                    String cleanText = v.text.replaceAll("\\{[^}]*\\}", "");
-                    v = new Verse(v.bookName, v.book, v.chapter, v.verse, cleanText);
-                    verses.set(i, v);
-                }
+        while (line != null) {
+            if (line.length() == 0) {
+                // end of content
+                break;
+            } else if (line.startsWith("Book ")) {
+                // start of a book
+                String[] parts = line.split(" ", 3);
+                book = Integer.parseInt(parts[1]);
+                bookName = parts[2];
+                this.bookNames.put(book, bookName);
+            } else if (line.startsWith(" ")) {
+                // continuation of a verse
+                Verse v = this.verses.removeLast();
+                String text = String.join(" ", v.text, line.substring(8));
+                this.verses.add(new Verse(v.bookName, v.book, v.chapter, v.verse, text));
+            } else {
+                // start of a verse
+                chapter = Integer.parseInt(line.substring(0, 3));
+                verse = Integer.parseInt(line.substring(4, 7));
+                String text = line.substring(8);
+                this.verses.add(new Verse(bookName, book, chapter, verse, text));
+                this.versesPerBook[book-1]++;
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            line = reader.readLine();
+        }
+
+        for (int i = 0; i < verses.size(); i++) {
+            Verse v = verses.get(i);
+            // strip notes
+            if (v.text.contains("{")) {
+                String cleanText = v.text.replaceAll("\\{[^}]*\\}", "");
+                v = new Verse(v.bookName, v.book, v.chapter, v.verse, cleanText);
+                verses.set(i, v);
+            }
         }
     }
 

@@ -3,13 +3,15 @@ package org.example;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BibleTest {
     private Bible bible;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         bible = new Bible();
         bible.load();
     }
