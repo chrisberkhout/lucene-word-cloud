@@ -16,7 +16,6 @@ public class Server {
     private static final int topDocsNumber = 100;
     private static final int topTermsNumber = 200;
 
-
     Server(Searcher searcher, long[] versesPerBook) {
         this.searcher = searcher;
         this.versesPerBook = versesPerBook;

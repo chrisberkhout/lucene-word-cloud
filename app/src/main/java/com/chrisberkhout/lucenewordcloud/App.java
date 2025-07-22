@@ -8,20 +8,25 @@ import java.nio.file.Paths;
 
 public class App {
 
-    private static final String indexPath = "index";
+    private static final String INDEX_PATH = "index";
 
-    public static void main(String[] args) throws IOException {
-        Bible bible = new Bible();
-        bible.load();
+    public static void main(String[] args) {
+        try {
+            Bible bible = new Bible();
+            bible.load();
 
-        Analyzer analyzer  = AnalyzerBuilder.build();
-        FSDirectory dir = FSDirectory.open(Paths.get(indexPath));
+            Analyzer analyzer = AnalyzerBuilder.build();
+            try (FSDirectory dir = FSDirectory.open(Paths.get(INDEX_PATH))) {
+                new IndexBuilder(analyzer, dir).build(bible);
+                Searcher searcher = new Searcher(analyzer, dir);
 
-        new IndexBuilder(analyzer, dir).build(bible);
-
-        Searcher searcher = new Searcher(analyzer, dir);
-
-        new Server(searcher, bible.getVersesPerBook()).start();
+                new Server(searcher, bible.getVersesPerBook()).start();
+            }
+        } catch (IOException e) {
+            System.err.println("An I/O error occurred: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
 }
