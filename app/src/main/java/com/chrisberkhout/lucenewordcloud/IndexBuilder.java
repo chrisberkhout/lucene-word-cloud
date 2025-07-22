@@ -24,9 +24,9 @@ public class IndexBuilder {
     public void build(Bible bible) throws IOException {
         IndexWriterConfig iwc = new IndexWriterConfig(this.analyzer);
 
-        // overwrite any existing index
+        // Overwrite any existing index
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-        // keep various files separate, for easier inspection
+        // Keep various files separate, for easier inspection
         iwc.setUseCompoundFile(false);
 
         IndexWriter writer = new IndexWriter(dir, iwc);
@@ -34,7 +34,7 @@ public class IndexBuilder {
             indexVerse(writer, verse);
         }
 
-        // it's a static index
+        // It's a static index
         writer.forceMerge(1);
         writer.close();
     }

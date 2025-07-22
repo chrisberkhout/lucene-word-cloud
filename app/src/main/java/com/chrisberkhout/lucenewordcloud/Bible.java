@@ -35,27 +35,27 @@ public class Bible {
         int verse = 0;
 
         while ((line = reader.readLine()) != null) {
-            // advance to the content
+            // Advance to the content
             if (line.startsWith("Book ")) break;
         }
 
         while (line != null) {
             if (line.length() == 0) {
-                // end of content
+                // End of content
                 break;
             } else if (line.startsWith("Book ")) {
-                // start of a book
+                // Start of a book
                 String[] parts = line.split(" ", 3);
                 book = Integer.parseInt(parts[1]);
                 bookName = parts[2];
                 this.bookNames.put(book, bookName);
             } else if (line.startsWith(" ")) {
-                // continuation of a verse
+                // Continuation of a verse
                 Verse v = this.verses.removeLast();
                 String text = String.join(" ", v.text, line.substring(8));
                 this.verses.add(new Verse(v.bookName, v.book, v.chapter, v.verse, text));
             } else {
-                // start of a verse
+                // Start of a verse
                 chapter = Integer.parseInt(line.substring(0, 3));
                 verse = Integer.parseInt(line.substring(4, 7));
                 String text = line.substring(8);
@@ -67,7 +67,7 @@ public class Bible {
 
         for (int i = 0; i < verses.size(); i++) {
             Verse v = verses.get(i);
-            // strip notes
+            // Strip notes
             if (v.text.contains("{")) {
                 String cleanText = v.text.replaceAll("\\{[^}]*\\}", "");
                 v = new Verse(v.bookName, v.book, v.chapter, v.verse, cleanText);
