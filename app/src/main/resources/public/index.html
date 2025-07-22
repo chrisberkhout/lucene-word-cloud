@@ -271,7 +271,7 @@
         data.showingNum = data.hits.length;
 
         wordcloud.update(data.topTerms);
-        drawFacetCounts(data.hitsByBook);
+        drawFacetCounts(data.hitsPerBook);
 
         resultsDescriptionDiv.innerHTML = Mustache.render(
           document.getElementById("results-description-template").innerHTML,
@@ -297,7 +297,7 @@
           return;
         }
         wordcloud.update(initData.topTerms);
-        drawFacetCounts(initData.hitsByBook);
+        drawFacetCounts(initData.hitsPerBook);
       })();
     </script>
   </body>

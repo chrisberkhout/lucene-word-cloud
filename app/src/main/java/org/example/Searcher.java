@@ -50,7 +50,7 @@ public class Searcher {
         return tw.getTerms();
     }
 
-    public SearchResult search(String qStr) throws IOException {
+    public Result search(String qStr) throws IOException {
         StandardQueryParser sqp = new StandardQueryParser(this.analyzer);
 
         Query q;
@@ -63,19 +63,32 @@ public class Searcher {
         TopDocsAndCounts topDocsAndCounts = searchTopDocsAndCounts(q);
         List<TopTerms.ScoredTerm> topTerms = searchTopTerms(q);
 
-        SearchResult qr = new SearchResult(
-            null,
+        Result qr = new Result(
             topDocsAndCounts.totalHits(),
             topDocsAndCounts.topDocs(),
             topTerms,
-            topDocsAndCounts.hitsByBook()
+            topDocsAndCounts.hitsPerBook()
         );
 
         return qr;
     }
 
+    record Result(
+        Long totalHits,
+        List<Hit> hits,
+        List<TopTerms.ScoredTerm> topTerms,
+        int[] hitsPerBook
+    ) {}
+
+    public record Hit(
+        double score,
+        String book,
+        long chapter,
+        long verse,
+        String text
+    ) {}
+
     private TopDocsAndCounts searchTopDocsAndCounts(Query q) throws IOException {
-        // scored top N search and facet counts
         IndexSearcher searcher = new IndexSearcher(this.reader);
         FacetsCollectorManager fcm = new FacetsCollectorManager();
         FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 100, fcm);
@@ -83,11 +96,11 @@ public class Searcher {
 
         ScoreDoc[] scoreDocs = topDocs.scoreDocs;
         StoredFields storedFields = searcher.storedFields();
-        List<SearchResult.Hit> hits = new ArrayList<>();
+        List<Hit> hits = new ArrayList<>();
         for (int i = 0; i < scoreDocs.length; i++) {
             Document doc = storedFields.document(scoreDocs[i].doc);
             hits.add(
-                new SearchResult.Hit(
+                new Hit(
                     scoreDocs[i].score,
                     doc.get("book"),
                     Long.parseLong(doc.get("chapter_num")),
@@ -101,21 +114,21 @@ public class Searcher {
         SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
         Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
         FacetResult facetResult = facets.getAllChildren("book_num");
-        int[] hitsByBook = new int[66];
+        int[] hitsPerBook = new int[66];
         if (facetResult != null) {
             for (LabelAndValue lv : facetResult.labelValues) {
                 System.out.println("  " + lv.label + " (" + lv.value + ")");
-                hitsByBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
+                hitsPerBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
             }
         }
 
-        return new TopDocsAndCounts(hits, topDocs.totalHits.value(), hitsByBook);
+        return new TopDocsAndCounts(hits, topDocs.totalHits.value(), hitsPerBook);
     }
 
-    private record TopDocsAndCounts(List<SearchResult.Hit> topDocs, long totalHits, int[] hitsByBook) {}
+    private record TopDocsAndCounts(List<Hit> topDocs, long totalHits, int[] hitsPerBook) {}
 
     /*
-     * Perform an unscored search to collect terms information from every hit.
+     * An unscored search to collect terms information from every hit.
      *
      * It's a separate search for simplicity. It could be combined in a MultiCollector with the unscored facet counts
      * collection, but not with the scored top docs search.
@@ -137,3 +150,4 @@ public class Searcher {
     }
 
 }
+
