@@ -59,13 +59,13 @@ class TermFrequenciesCollector extends SimpleCollector {
     public ScoreMode scoreMode() {
         return ScoreMode.COMPLETE_NO_SCORES;
     }
-};
 
-class Frequencies {
-    long total;
-    long docs;
-    Frequencies(long total, long docs) {
-        this.total = total;
-        this.docs = docs;
+    class Frequencies {
+        long total;
+        long docs;
+        Frequencies(long total, long docs) {
+            this.total = total;
+            this.docs = docs;
+        }
     }
-}
+};

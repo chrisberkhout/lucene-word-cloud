@@ -141,8 +141,8 @@ public class Searcher {
 
         int totalHits = collector.getTotalHits();
         TopTerms tw = new TopTerms();
-        for (Map.Entry<String,Frequencies> e : collector.getTermFrequencies().entrySet()) {
-            Frequencies f = e.getValue();
+        for (Map.Entry<String,TermFrequenciesCollector.Frequencies> e : collector.getTermFrequencies().entrySet()) {
+            TermFrequenciesCollector.Frequencies f = e.getValue();
             tw.maybeAddTerm(e.getKey(), f.total, f.docs, totalHits);
         }
 
