@@ -31,8 +31,8 @@ public class IndexBuilder {
 
         IndexWriter writer = new IndexWriter(dir, iwc);
         // by verse
-        for (Bible.Section verse : bible.getVerses()) {
-            indexSection(writer, verse);
+        for (Bible.Verse verse : bible.getVerses()) {
+            indexVerse(writer, verse);
         }
 
         // costly but optimizes search performance for static indexes
@@ -40,34 +40,31 @@ public class IndexBuilder {
         writer.close();
     }
 
-    private void indexSection(IndexWriter indexWriter, Bible.Section section) throws IOException {
+    private void indexVerse(IndexWriter indexWriter, Bible.Verse verse) throws IOException {
         Document doc = new Document();
 
-        doc.add(new TextField("book", section.bookName(), Field.Store.YES));
+        doc.add(new TextField("book", verse.bookName(), Field.Store.YES));
 
-        doc.add(new LongPoint("book_num", section.book())); // filtering
-        doc.add(new SortedSetDocValuesFacetField("book_num", Integer.toString(section.book())));
-//        doc.add(new NumericDocValuesField("book_num", section.book())); // sorting / faceting
-        doc.add(new StoredField("book_num", section.book())); // retrieval
+        doc.add(new LongPoint("book_num", verse.book())); // filtering
+        doc.add(new SortedSetDocValuesFacetField("book_num", Integer.toString(verse.book())));
+//        doc.add(new NumericDocValuesField("book_num", verse.book())); // sorting / faceting
+        doc.add(new StoredField("book_num", verse.book())); // retrieval
 
-        doc.add(new LongPoint("chapter_num", section.chapter())); // filtering
-        doc.add(new NumericDocValuesField("chapter_num", section.chapter())); // sorting / faceting
-        doc.add(new StoredField("chapter_num", section.chapter())); // retrieval
+        doc.add(new LongPoint("chapter_num", verse.chapter())); // filtering
+        doc.add(new NumericDocValuesField("chapter_num", verse.chapter())); // sorting / faceting
+        doc.add(new StoredField("chapter_num", verse.chapter())); // retrieval
 
-        section.verse().ifPresent(v ->{
-            doc.add(new LongPoint("verse_num", v)); // filtering
-            doc.add(new NumericDocValuesField("verse_num", v)); // sorting / faceting
-            doc.add(new StoredField("verse_num", v)); // retrieval
-        });
+        doc.add(new LongPoint("verse_num", verse.verse())); // filtering
+        doc.add(new NumericDocValuesField("verse_num", verse.verse())); // sorting / faceting
+        doc.add(new StoredField("verse_num", verse.verse())); // retrieval
 
         FieldType textWithTV = new FieldType(TextField.TYPE_STORED) {{
             setStoreTermVectors(true);
             freeze();
         }};
-        doc.add(new Field("text", section.text(), textWithTV));
+        doc.add(new Field("text", verse.text(), textWithTV));
 
         indexWriter.addDocument(facetsConfig.build(doc));
     }
-
 
 }
