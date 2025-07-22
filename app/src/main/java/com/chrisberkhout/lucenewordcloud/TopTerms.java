@@ -1,4 +1,4 @@
-package org.example;
+package com.chrisberkhout.lucenewordcloud;
 
 import java.util.Comparator;
 import java.util.List;

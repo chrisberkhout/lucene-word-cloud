@@ -1,4 +1,4 @@
-package org.example;
+package com.chrisberkhout.lucenewordcloud;
 
 import java.io.BufferedReader;
 import java.io.IOException;

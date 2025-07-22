@@ -1,4 +1,4 @@
-package org.example;
+package com.chrisberkhout.lucenewordcloud;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;

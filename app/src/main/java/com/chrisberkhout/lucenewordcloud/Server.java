@@ -1,4 +1,4 @@
-package org.example;
+package com.chrisberkhout.lucenewordcloud;
 
 import io.javalin.Javalin;
 import io.javalin.http.Context;

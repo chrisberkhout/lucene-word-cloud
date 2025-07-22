@@ -1,4 +1,4 @@
-package org.example;
+package com.chrisberkhout.lucenewordcloud;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
