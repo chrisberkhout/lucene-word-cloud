@@ -77,7 +77,7 @@ public class Searcher {
         Long totalHits,
         List<Hit> hits,
         List<TopTerms.ScoredTerm> topTerms,
-        int[] hitsPerBook
+        long[] hitsPerBook
     ) {}
 
     public record Hit(
@@ -114,17 +114,17 @@ public class Searcher {
         SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader(), facetsConfig);
         Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
         FacetResult facetResult = facets.getAllChildren("book_num");
-        int[] hitsPerBook = new int[66];
+        long[] hitsPerBook = new long[66];
         if (facetResult != null) {
             for (LabelAndValue lv : facetResult.labelValues) {
-                hitsPerBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
+                hitsPerBook[Integer.parseInt(lv.label)-1] = lv.value.longValue();
             }
         }
 
         return new TopDocsAndCounts(hits, topDocs.totalHits.value(), hitsPerBook);
     }
 
-    private record TopDocsAndCounts(List<Hit> topDocs, long totalHits, int[] hitsPerBook) {}
+    private record TopDocsAndCounts(List<Hit> topDocs, long totalHits, long[] hitsPerBook) {}
 
     /*
      * An unscored search to collect terms information from every hit.

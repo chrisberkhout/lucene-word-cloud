@@ -12,13 +12,13 @@ public class Bible {
 
     private final Map<Integer, String> bookNames = new HashMap<>();
     private final ArrayList<Verse> verses = new ArrayList<>();
-    private final int[] versesPerBook = new int[66];
+    private final long[] versesPerBook = new long[66];
 
     public List<Verse> getVerses() {
         return Collections.unmodifiableList(verses);
     }
 
-    public int[] getVersesPerBook() {
+    public long[] getVersesPerBook() {
         return versesPerBook;
     }
 

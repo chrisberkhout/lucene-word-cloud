@@ -26,16 +26,15 @@ public class IndexBuilder {
 
         // overwrite any existing index
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-        // keep various files separate
+        // keep various files separate, for easier inspection
         iwc.setUseCompoundFile(false);
 
         IndexWriter writer = new IndexWriter(dir, iwc);
-        // by verse
         for (Bible.Verse verse : bible.getVerses()) {
             indexVerse(writer, verse);
         }
 
-        // costly but optimizes search performance for static indexes
+        // it's a static index
         writer.forceMerge(1);
         writer.close();
     }
@@ -44,19 +43,10 @@ public class IndexBuilder {
         Document doc = new Document();
 
         doc.add(new TextField("book", verse.bookName(), Field.Store.YES));
-
-        doc.add(new LongPoint("book_num", verse.book())); // filtering
         doc.add(new SortedSetDocValuesFacetField("book_num", Integer.toString(verse.book())));
-//        doc.add(new NumericDocValuesField("book_num", verse.book())); // sorting / faceting
-        doc.add(new StoredField("book_num", verse.book())); // retrieval
-
-        doc.add(new LongPoint("chapter_num", verse.chapter())); // filtering
-        doc.add(new NumericDocValuesField("chapter_num", verse.chapter())); // sorting / faceting
-        doc.add(new StoredField("chapter_num", verse.chapter())); // retrieval
-
-        doc.add(new LongPoint("verse_num", verse.verse())); // filtering
-        doc.add(new NumericDocValuesField("verse_num", verse.verse())); // sorting / faceting
-        doc.add(new StoredField("verse_num", verse.verse())); // retrieval
+        doc.add(new StoredField("book_num", verse.book()));
+        doc.add(new StoredField("chapter_num", verse.chapter()));
+        doc.add(new StoredField("verse_num", verse.verse()));
 
         FieldType textWithTV = new FieldType(TextField.TYPE_STORED) {{
             setStoreTermVectors(true);

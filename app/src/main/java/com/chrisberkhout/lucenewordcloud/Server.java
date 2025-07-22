@@ -10,14 +10,14 @@ public class Server {
 
     Searcher searcher;
     Javalin api;
-    int[] versesPerBook;
+    long[] versesPerBook;
 
     private static final int port = 7070;
     private static final int topDocsNumber = 100;
     private static final int topTermsNumber = 200;
 
 
-    Server(Searcher searcher, int[] versesPerBook) {
+    Server(Searcher searcher, long[] versesPerBook) {
         this.searcher = searcher;
         this.versesPerBook = versesPerBook;
         this.api = Javalin.create(config -> {
@@ -61,7 +61,7 @@ public class Server {
     record SearchResponse(
         List<Searcher.Hit> hits,
         Long totalHits,
-        int[] hitsPerBook,
+        long[] hitsPerBook,
         List<TopTerms.ScoredTerm> topTerms,
         Long time
     ) {}

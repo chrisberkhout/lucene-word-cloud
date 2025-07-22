@@ -43,7 +43,7 @@ public class BibleTest {
 
     @Test
     void countsVersesPerBookCorrectly() {
-        int[] counts = bible.getVersesPerBook();
+        long[] counts = bible.getVersesPerBook();
         assertEquals(counts.length, 66);
         assertEquals(counts[0], 1533);
         assertEquals(counts[counts.length-1], 404);
