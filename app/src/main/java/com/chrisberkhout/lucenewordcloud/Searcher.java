@@ -117,7 +117,6 @@ public class Searcher {
         int[] hitsPerBook = new int[66];
         if (facetResult != null) {
             for (LabelAndValue lv : facetResult.labelValues) {
-                System.out.println("  " + lv.label + " (" + lv.value + ")");
                 hitsPerBook[Integer.parseInt(lv.label)-1] = lv.value.intValue();
             }
         }
