@@ -25,8 +25,8 @@ public class Bible {
     public void load() {
         try (
                 BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        Bible.class.getClassLoader().getResourceAsStream("pg8294.txt"),
-                        StandardCharsets.UTF_8
+                    Objects.requireNonNull(Bible.class.getClassLoader().getResourceAsStream("pg8294.txt")),
+                    StandardCharsets.UTF_8
                 ))
         ) {
             String line;
