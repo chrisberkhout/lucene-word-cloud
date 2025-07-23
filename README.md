@@ -21,12 +21,7 @@ To build the index and start the server, run:
 
 Interact with it by opening the page [http://localhost:7070](http://localhost:7070).
 
-TODO: GIF
-    - initial load
-    - word
-    - boolean
-    - book
-    - book+phrase
+![Demo](demo.gif)
 
 The Lucene index will be written to `./index/` and can be inspected with
 Lucene's [Luke](https://github.com/apache/lucene/tree/main/lucene/luke) GUI
