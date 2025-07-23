@@ -1,9 +1,8 @@
 # Lucene Word Cloud
 
-This project is a Lucene demo app that indexes the World English Bible by
-verse.
+A Lucene demo app that indexes the World English Bible by verse.
 
-Users can search the full text using Lucene's standard query parser syntax. The
+It provides full text search using Lucene's standard query parser syntax. The
 top matching verses are returned (scored by the default BM25 metric), along
 with a total count of hits and facet counts by book.
 
@@ -21,18 +20,18 @@ To build the index and start the server, run:
 
 Interact with it by opening the page [http://localhost:7070](http://localhost:7070).
 
-![Demo](demo.gif)
-
 The Lucene index will be written to `./index/` and can be inspected with
 Lucene's [Luke](https://github.com/apache/lucene/tree/main/lucene/luke) GUI
 tool.
+
+![Demo](demo.gif)
 
 ## Discussion
 
 ### Analysis and top terms
 
-To show the user an interesting world cloud visualization that gives a sense of
-the topics in the selected documents, we want to combine variations of one word
+To show an interesting world cloud visualization that gives a sense of the
+topics in the selected documents, we want to combine variations of one word
 (using stemming or lemmatization), score them based on importance rather than
 raw frequency (using TF-IDF), and exclude some words entirely (using a
 stopwords list).
@@ -168,9 +167,9 @@ the total number of documents.
 For global results, we can use numbers from the Lucene index's segment
 information and terms dictionary.
 
-By adding term vectors to the index we can see term information for each
-document, and can use that to calculate TF-IDF for terms in documents matching
-a query.
+For results specific to documents matching a query, we can add term vectors to
+the index, and read them to collect term information for the TF-IDF calculation
+from each matching document.
 
 ### Querying, search and collection
 
